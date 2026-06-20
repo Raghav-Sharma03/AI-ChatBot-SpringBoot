@@ -1,0 +1,5 @@
+spring.application.name=chatbot
+
+spring.ai.openai.api-key=your_groq_api_key_here
+spring.ai.openai.base-url=https://api.groq.com/openai/v1
+spring.ai.openai.chat.options.model=llama-3.1-8b-instant
