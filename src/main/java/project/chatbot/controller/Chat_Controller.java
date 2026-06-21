@@ -1,9 +1,9 @@
 package project.chatbot.controller;
 
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -19,11 +19,11 @@ public class Chat_Controller{
     }
 
 
-    @GetMapping("/chat")
-    public String chat(@RequestParam String message){
+    @PostMapping("/chat")
+    public String chat(@RequestBody ChatRequest request){
         return chatClient
             .prompt()
-            .user(message)    // Attach the user message to the prompt
+            .user(request.getMessage())    // Attach the user message to the prompt
             .call()           //Actually send the request to the AI model
             .content();       // Return the content of the response from the AI model
     }
