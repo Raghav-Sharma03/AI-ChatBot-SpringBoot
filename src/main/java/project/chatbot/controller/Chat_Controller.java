@@ -1,5 +1,7 @@
 package project.chatbot.controller;
 
+import java.time.LocalDateTime;
+
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,7 +22,11 @@ public class Chat_Controller{
 
 
     @PostMapping("/chat")
-    public String chat(@RequestBody ChatRequest request,  @RequestParam(defaultValue = "default-session") String sessionId){
-        return chatService.chat(request.getMessage(), sessionId);
+    public ChatResponse chat(@RequestBody ChatRequest request,  @RequestParam(defaultValue = "default-session") String sessionId){
+        LocalDateTime requestTime = LocalDateTime.now();
+        String message = chatService.chat(request.getMessage(), sessionId);
+        LocalDateTime responseTime = LocalDateTime.now();
+
+        return new ChatResponse(message, sessionId, requestTime, responseTime);
     }
 }
