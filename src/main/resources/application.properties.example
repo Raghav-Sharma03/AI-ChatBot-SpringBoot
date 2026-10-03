@@ -2,3 +2,4 @@ spring.application.name=chatbot
 
 spring.ai.google.genai.api-key=YOUR_GEMINI_KEY_HERE
 spring.ai.google.genai.chat.options.model=gemini-3.8-flash
+spring.mvc.problemdetails.enabled=false
