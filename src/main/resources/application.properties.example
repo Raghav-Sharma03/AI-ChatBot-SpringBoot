@@ -1,5 +1,20 @@
 spring.application.name=chatbot
 
+# Google Gemini — primary provider
 spring.ai.google.genai.api-key=YOUR_GEMINI_KEY_HERE
 spring.ai.google.genai.chat.options.model=gemini-3.8-flash
+
+# OpenRouter — secondary provider
+spring.ai.openai.api-key=YOUR_OPENROUTER_KEY_HERE
+spring.ai.openai.base-url=https://openrouter.ai/api/v1
+spring.ai.openai.chat.options.model=nvidia/nemotron-3.5-lightning:free
+
+
+
+# Ollama — local fallback
+spring.ai.ollama.base-url=http://localhost:11434
+spring.ai.ollama.chat.options.model=llama3.2
+
+
+# Disable problem details
 spring.mvc.problemdetails.enabled=false
