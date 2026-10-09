@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
@@ -30,7 +31,7 @@ public class ChatService {
         this.chatMemory = chatMemory;
     }
 
-    public String chat(String message, String sessionId) {
+    public ChatResult chat(String message, String sessionId) {
         if (message.length() < SHORT_MESSAGE_THRESHOLD) {
             log.info("Routing to Gemini — short message ({} chars)", message.length());
             return tryGemini(message, sessionId);
@@ -40,44 +41,65 @@ public class ChatService {
         }
     }
 
-    private String tryGemini(String message, String sessionId) {
+    private ChatResult tryGemini(String message, String sessionId) {
         try {
-            return geminiClient.prompt()
+            ChatResponse response = geminiClient.prompt()
                     .user(message)
                     .advisors(a -> a
                             .advisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
                             .param(ChatMemory.CONVERSATION_ID, sessionId))
                     .call()
-                    .content();
+                    .chatResponse();
+            return toChatResult(response);
         } catch (Exception e) {
             log.warn("Gemini failed: {}. Falling back to Ollama.", e.getMessage(), e);
             return tryOllama(message, sessionId);
         }
     }
 
-    private String tryOpenRouter(String message, String sessionId) {
+    private ChatResult tryOpenRouter(String message, String sessionId) {
         try {
-            return openRouterClient.prompt()
+            ChatResponse response = openRouterClient.prompt()
                     .user(message)
                     .advisors(a -> a
                             .advisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
                             .param(ChatMemory.CONVERSATION_ID, sessionId))
                     .call()
-                    .content();
+                    .chatResponse();
+            return toChatResult(response);
         } catch (Exception e) {
-            log.warn("OpenRouter failed: {}. Falling back to Ollama.", e.getMessage());
+            log.warn("OpenRouter failed: {}. Falling back to Ollama.", e.getMessage(), e);
             return tryOllama(message, sessionId);
         }
     }
 
-    private String tryOllama(String message, String sessionId) {
+    private ChatResult tryOllama(String message, String sessionId) {
         log.info("Using Ollama fallback.");
-        return ollamaClient.prompt()
+        ChatResponse response = ollamaClient.prompt()
                 .user(message)
                 .advisors(a -> a
                         .advisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
                         .param(ChatMemory.CONVERSATION_ID, sessionId))
                 .call()
-                .content();
+                .chatResponse();
+        return toChatResult(response);
+    }
+
+    private ChatResult toChatResult(ChatResponse response) {
+        String text = response.getResult().getOutput().getText();
+        long promptTokens = 0;
+        long completionTokens = 0;
+        long totalTokens = 0;
+        try {
+            var usage = response.getMetadata().getUsage();
+            promptTokens = usage.getPromptTokens();
+            completionTokens = usage.getCompletionTokens();
+            totalTokens = usage.getTotalTokens();
+            log.info("Tokens used — prompt: {}, completion: {}, total: {}",
+                    promptTokens, completionTokens, totalTokens);
+        } catch (Exception e) {
+            log.warn("Could not read token usage.");
+        }
+        return new ChatResult(text, promptTokens, completionTokens, totalTokens);
     }
 }
