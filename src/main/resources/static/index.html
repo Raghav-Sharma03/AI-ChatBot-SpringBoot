@@ -666,6 +666,9 @@ async function send(text) {
         const diff = (new Date(data.responseTime) - new Date(data.requestTime)) / 1000;
         if (diff >= 0) meta += '  ·  Responded in ' + diff.toFixed(1) + 's';
       }
+      if (data.totalTokens && data.totalTokens > 0) {
+        meta += '  ·  Tokens — prompt: ' + data.promptTokens + ', completion: ' + data.completionTokens + ', total: ' + data.totalTokens;
+      }
       addMessage('ai', data.message, meta, false);
     }
   } catch (e) {

@@ -18,3 +18,6 @@ spring.ai.ollama.chat.options.model=llama3.2
 
 # Disable problem details
 spring.mvc.problemdetails.enabled=false
+
+# Token optimization
+chatbot.memory.max-messages=10

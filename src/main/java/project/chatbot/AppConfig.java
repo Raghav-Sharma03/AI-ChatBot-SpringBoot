@@ -30,13 +30,16 @@ public class AppConfig {
     @Value("${spring.ai.openai.chat.options.model}")
     private String openRouterModel;
 
+    @Value("${chatbot.memory.max-messages:10}")
+    private int maxMessages;
+
     @Bean
     public ChatMemory chatMemory() {
         return MessageWindowChatMemory.builder()
-                .chatMemoryRepository(new InMemoryChatMemoryRepository())
-                .maxMessages(10)
-                .build();
-    }
+               .chatMemoryRepository(new InMemoryChatMemoryRepository())
+               .maxMessages(maxMessages)
+               .build();
+        }
 
     @Bean
     @Qualifier("geminiClient")
