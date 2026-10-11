@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
 import java.time.Duration;
 import java.util.List;
@@ -36,12 +37,13 @@ public class AppConfig {
     @Bean
     public ChatMemory chatMemory() {
         return MessageWindowChatMemory.builder()
-               .chatMemoryRepository(new InMemoryChatMemoryRepository())
-               .maxMessages(maxMessages)
-               .build();
-        }
+                .chatMemoryRepository(new InMemoryChatMemoryRepository())
+                .maxMessages(maxMessages)
+                .build();
+    }
 
     @Bean
+    @Primary
     @Qualifier("geminiClient")
     public ChatClient geminiClient(GoogleGenAiChatModel model) {
         return ChatClient.builder(model)
@@ -49,45 +51,45 @@ public class AppConfig {
                 .build();
     }
 
-@Bean
-@Qualifier("openRouterClient")
-public ChatClient openRouterClient() {
-    com.openai.client.OpenAIClient syncClient = OpenAiSetup.setupSyncClient(
-            openRouterBaseUrl,
-            openRouterApiKey,
-            null, null, null, null,
-            false, false,
-            null,
-            Duration.ofSeconds(120),
-            0, null, null,
-            ObservationRegistry.NOOP,
-            null,
-            List.of());
+    @Bean
+    @Qualifier("openRouterClient")
+    public ChatClient openRouterClient() {
+        com.openai.client.OpenAIClient syncClient = OpenAiSetup.setupSyncClient(
+                openRouterBaseUrl,
+                openRouterApiKey,
+                null, null, null, null,
+                false, false,
+                null,
+                Duration.ofSeconds(120),
+                0, null, null,
+                ObservationRegistry.NOOP,
+                null,
+                List.of());
 
-    com.openai.client.OpenAIClientAsync asyncClient = OpenAiSetup.setupAsyncClient(
-            openRouterBaseUrl,
-            openRouterApiKey,
-            null, null, null, null,
-            false, false,
-            null,
-            Duration.ofSeconds(120),
-            0, null, null,
-            ObservationRegistry.NOOP,
-            null,
-            List.of());
+        com.openai.client.OpenAIClientAsync asyncClient = OpenAiSetup.setupAsyncClient(
+                openRouterBaseUrl,
+                openRouterApiKey,
+                null, null, null, null,
+                false, false,
+                null,
+                Duration.ofSeconds(120),
+                0, null, null,
+                ObservationRegistry.NOOP,
+                null,
+                List.of());
 
-    OpenAiChatModel chatModel = OpenAiChatModel.builder()
-            .openAiClient(syncClient)
-            .openAiClientAsync(asyncClient)
-            .options(OpenAiChatOptions.builder()
-                    .model(openRouterModel)
-                    .build())
-            .build();
+        OpenAiChatModel chatModel = OpenAiChatModel.builder()
+                .openAiClient(syncClient)
+                .openAiClientAsync(asyncClient)
+                .options(OpenAiChatOptions.builder()
+                        .model(openRouterModel)
+                        .build())
+                .build();
 
-    return ChatClient.builder(chatModel)
-            .defaultSystem("You are a helpful assistant.")
-            .build();
-}
+        return ChatClient.builder(chatModel)
+                .defaultSystem("You are a helpful assistant.")
+                .build();
+    }
 
     @Bean
     @Qualifier("ollamaClient")
