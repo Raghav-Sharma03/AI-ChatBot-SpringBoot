@@ -1,5 +1,9 @@
 package project.chatbot.service;
 
+import org.springframework.ai.document.Document;
+import project.chatbot.service.RagService;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -19,27 +23,45 @@ public class ChatService {
     private final ChatClient openRouterClient;
     private final ChatClient ollamaClient;
     private final ChatMemory chatMemory;
+    private final RagService ragService;
 
-    public ChatService(
-            @Qualifier("geminiClient") ChatClient geminiClient,
-            @Qualifier("openRouterClient") ChatClient openRouterClient,
-            @Qualifier("ollamaClient") ChatClient ollamaClient,
-            ChatMemory chatMemory) {
-        this.geminiClient = geminiClient;
-        this.openRouterClient = openRouterClient;
-        this.ollamaClient = ollamaClient;
-        this.chatMemory = chatMemory;
+public ChatService(
+        @Qualifier("geminiClient") ChatClient geminiClient,
+        @Qualifier("openRouterClient") ChatClient openRouterClient,
+        @Qualifier("ollamaClient") ChatClient ollamaClient,
+        ChatMemory chatMemory,
+        RagService ragService) {
+    this.geminiClient = geminiClient;
+    this.openRouterClient = openRouterClient;
+    this.ollamaClient = ollamaClient;
+    this.chatMemory = chatMemory;
+    this.ragService = ragService;
+}
+
+public ChatResult chat(String message, String sessionId) {
+    List<Document> docs = ragService.search(message);
+    String augmentedMessage = message;
+
+    if (!docs.isEmpty()) {
+        String context = docs.stream()
+                .map(Document::getText)
+                .collect(Collectors.joining("\n\n"));
+        augmentedMessage = "Use the following context to answer the question.\n\n"
+                + "Context:\n" + context
+                + "\n\nQuestion: " + message;
+        log.info("RAG context added — {} chunks found.", docs.size());
+    } else {
+        log.info("No RAG context found. Answering from model knowledge.");
     }
 
-    public ChatResult chat(String message, String sessionId) {
-        if (message.length() < SHORT_MESSAGE_THRESHOLD) {
-            log.info("Routing to Gemini — short message ({} chars)", message.length());
-            return tryGemini(message, sessionId);
-        } else {
-            log.info("Routing to OpenRouter — long message ({} chars)", message.length());
-            return tryOpenRouter(message, sessionId);
-        }
+    if (augmentedMessage.length() < SHORT_MESSAGE_THRESHOLD) {
+        log.info("Routing to Gemini — short message ({} chars)", message.length());
+        return tryGemini(augmentedMessage, sessionId);
+    } else {
+        log.info("Routing to OpenRouter — long message ({} chars)", message.length());
+        return tryOpenRouter(augmentedMessage, sessionId);
     }
+}
 
     private ChatResult tryGemini(String message, String sessionId) {
         try {

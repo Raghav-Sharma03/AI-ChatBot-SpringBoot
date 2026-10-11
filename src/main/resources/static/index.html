@@ -470,6 +470,15 @@
         <div class="session-id-text" id="session-display"></div>
       </div>
     </div>
+        <div class="sidebar-section">
+      <div class="sidebar-label">Documents</div>
+      <input type="file" id="pdf-input" accept=".pdf" style="display:none">
+      <button class="new-chat-btn" id="upload-btn" type="button">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Upload PDF
+      </button>
+      <div id="upload-status" style="font-size:11px;color:var(--text-secondary);padding:4px;"></div>
+    </div>
 
     <div class="sidebar-footer">
       <span class="sidebar-tagline">Your intelligent assistant</span>
@@ -714,6 +723,37 @@ themeBtn.addEventListener('click', () => {
   document.documentElement.dataset.theme = isDark ? 'light' : 'dark';
   iconDark.style.display = isDark ? 'none' : '';
   iconLight.style.display = isDark ? '' : 'none';
+});
+// PDF Upload
+const uploadBtn = document.getElementById('upload-btn');
+const pdfInput  = document.getElementById('pdf-input');
+const uploadStatus = document.getElementById('upload-status');
+
+uploadBtn.addEventListener('click', () => pdfInput.click());
+
+pdfInput.addEventListener('change', async () => {
+  const file = pdfInput.files[0];
+  if (!file) return;
+
+  uploadStatus.textContent = 'Uploading...';
+  uploadBtn.disabled = true;
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  try {
+    const res = await fetch('/api/documents/upload', {
+      method: 'POST',
+      body: formData
+    });
+    const text = await res.text();
+    uploadStatus.textContent = res.ok ? '✓ ' + file.name : '✗ ' + text;
+  } catch (e) {
+    uploadStatus.textContent = '✗ Could not reach server.';
+  } finally {
+    uploadBtn.disabled = false;
+    pdfInput.value = '';
+  }
 });
 
 // Init
