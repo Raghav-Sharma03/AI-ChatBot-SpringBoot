@@ -1,7 +1,8 @@
 # NovaMind AI — AI Chatbot (Spring Boot)
 
-A full-stack AI chatbot built with Java and Spring Boot, powered by Google Gemini.
-Features a clean chat UI with conversation memory and session management.
+A full-stack AI chatbot built with Java and Spring Boot.
+Features multi-provider AI routing, RAG (PDF upload and Q&A),
+conversation memory, token usage display, and a clean chat UI.
 
 ## Screenshots
 
@@ -16,49 +17,94 @@ Features a clean chat UI with conversation memory and session management.
 - Java 21
 - Spring Boot 4.1.0
 - Spring AI 2.0.0
-- Google Gemini (gemini-3.8-flash)
-- In-memory conversation history (MessageWindowChatMemory)
+- Google Gemini (gemini-3.8-flash) — primary provider for short messages
+- OpenRouter (nvidia/nemotron-3.5-lightning:free) — secondary provider for long messages
+- Ollama (llama3.2) — local fallback
+- Ollama (nomic-embed-text) — embeddings for RAG
+- Chroma — vector database for RAG
+- Docker — for running Chroma
 
 ## Project Structure
 
 src/main/java/project/chatbot/
 ├── ChatbotApplication.java
+├── AppConfig.java
 ├── controller/
 │ ├── Chat_Controller.java
 │ ├── ChatRequest.java
-│ └── ChatResponse.java
+│ ├── ChatResponse.java
+│ └── DocumentController.java
 ├── service/
-│ └── ChatService.java
+│ ├── ChatService.java
+│ ├── ChatResult.java
+│ └── RagService.java
 ├── exception/
 │ ├── GlobalExceptionHandler.java
 │ └── ErrorResponse.java
-└── config/
-└── AppConfig.java
 
 src/main/resources/
-├── application.properties ← gitignored, add your API key here
+├── application.properties ← gitignored, copy from example
 ├── application.properties.example
 └── static/
 └── index.html ← frontend chat UI
 
 
+## Features
+
+- Multi-provider routing — short messages go to Gemini, long messages go to OpenRouter
+- Automatic fallback — if Gemini or OpenRouter fails, Ollama takes over
+- Conversation memory — AI remembers context within a session (configurable window)
+- RAG pipeline — upload a PDF and ask questions about it
+- Token usage display — prompt, completion and total tokens shown below every response
+- Session management — each new chat gets a unique session ID
+- Light and dark theme toggle
+- Global error handling with structured error responses
+- GitHub Actions CI pipeline
+
+## Prerequisites
+
+Before running the app, make sure these are running:
+
+**Ollama** — in a terminal:
+
+ollama serve
+ollama pull llama3.2
+ollama pull nomic-embed-text
+
+
+**Chroma** — in a terminal (Docker required):
+
+docker run -d --name chroma -p 8000:8000 chromadb/chroma
+
+
 ## Setup
 
-1. Clone the repo
+1. Clone the repo:
+
+git clone https://github.com/Raghav-Sharma03/AI-ChatBot-SpringBoot.git
+cd AI-ChatBot-SpringBoot
+
+
 2. Copy the example properties file:
 
 cp src/main/resources/application.properties.example src/main/resources/application.properties
 
-3. Get a free Gemini API key from https://aistudio.google.com/apikey
-4. Add your key in `application.properties`:
 
-spring.ai.google.genai.api-key=YOUR_KEY_HERE
+3. Add your API keys in `application.properties`:
 
-5. Run the app:
+spring.ai.google.genai.api-key=YOUR_GEMINI_KEY_HERE
+spring.ai.openai.api-key=YOUR_OPENROUTER_KEY_HERE
+
+
+- Gemini key: https://aistudio.google.com/apikey
+- OpenRouter key: https://openrouter.ai (free, no credit card)
+
+4. Run the app:
 
 mvn spring-boot:run
 
-6. Open http://localhost:8080 in your browser
+
+5. Open http://localhost:8080 in your browser
 
 ## API Contract
 
@@ -68,7 +114,7 @@ POST /api/chat?sessionId={sessionId}
 Content-Type: application/json
 
 {
-"message": "Hello"
+“message”: “Hello”
 }
 
 
@@ -77,10 +123,21 @@ Content-Type: application/json
 {
   "message": "Hello! How can I help you?",
   "sessionId": "session_abc123",
-  "requestTime": "2026-10-06T09:00:00",
-  "responseTime": "2026-10-06T09:00:02"
+  "requestTime": "2026-10-11T13:00:00",
+  "responseTime": "2026-10-11T13:00:02",
+  "promptTokens": 65,
+  "completionTokens": 20,
+  "totalTokens": 85
 }
 ```
+
+### Upload a PDF
+
+POST /api/documents/upload
+Content-Type: multipart/form-data
+
+file=<your PDF file>
+
 
 ### Error Response
 ```json
@@ -88,26 +145,31 @@ Content-Type: application/json
   "status": 500,
   "error": "Something went wrong: ...",
   "path": "/api/chat",
-  "timestamp": "2026-10-06T09:00:00"
+  "timestamp": "2026-10-11T13:00:00"
 }
 ```
 
-## Features
+## Configuration
 
-- Chat UI served at http://localhost:8080
-- Conversation memory — the AI remembers context within a session
-- Each new chat generates a unique session ID
-- Request and response timestamps shown in the UI
-- Light and dark theme toggle
-- Error handling with structured error responses
-- GitHub Actions CI pipeline
+Key properties in `application.properties`:
+
+| Property | Description | Default |
+|---|---|---|
+| `chatbot.memory.max-messages` | Max messages kept in conversation memory | 10 |
+| `spring.ai.model.embedding` | Which provider handles embeddings | ollama |
+| `spring.ai.ollama.embedding.model` | Ollama embedding model | nomic-embed-text |
+| `spring.ai.vectorstore.chroma.collection-name` | Chroma collection name | chatbot-docs |
 
 ## What I learned building this
 
 - Spring Boot REST API design
-- Spring AI integration with Google Gemini
+- Spring AI integration with multiple AI providers
+- Multi-provider routing and fallback chain
 - Conversation memory with MessageWindowChatMemory
-- DTO pattern for clean request and response handling
+- RAG pipeline — PDF ingestion, vector embeddings, similarity search
+- Chroma vector database integration
+- Token usage tracking and display
+- DTO pattern for clean request/response handling
 - Global exception handling with @RestControllerAdvice
 - Serving a frontend from Spring Boot static resources
 - Git branching, PR workflow, and GitHub Actions CI
