@@ -30,3 +30,8 @@ spring.ai.vectorstore.chroma.initialize-schema=true
 
 spring.ai.model.embedding=ollama
 spring.ai.ollama.embedding.model=nomic-embed-text
+
+#redis configuration
+spring.data.redis.host=localhost
+spring.data.redis.port=6380
+spring.cache.type=redis
