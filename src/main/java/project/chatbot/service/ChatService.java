@@ -11,6 +11,7 @@ import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -38,6 +39,7 @@ public ChatService(
     this.ragService = ragService;
 }
 
+@Cacheable(value = "chatResponses", key = "#message.toLowerCase().trim()")
 public ChatResult chat(String message, String sessionId) {
     List<Document> docs = ragService.search(message);
     String augmentedMessage = message;

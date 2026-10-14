@@ -1,6 +1,8 @@
 package project.chatbot.service;
 
-public class ChatResult {
+import java.io.Serializable;
+
+public class ChatResult implements Serializable {
 
     private final String text;
     private final long promptTokens;
