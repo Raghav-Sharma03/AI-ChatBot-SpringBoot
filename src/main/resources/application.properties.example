@@ -35,3 +35,16 @@ spring.ai.ollama.embedding.model=nomic-embed-text
 spring.data.redis.host=localhost
 spring.data.redis.port=6380
 spring.cache.type=redis
+
+# PostgreSQL
+spring.datasource.url=jdbc:postgresql://localhost:5432/chatbotdb?TimeZone=UTC
+spring.datasource.username=
+spring.datasource.password=
+spring.datasource.driver-class-name=org.postgresql.Driver
+
+
+# Spring Data JPA configuration
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=false
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+spring.jpa.open-in-view=false
