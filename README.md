@@ -2,7 +2,7 @@
 
 A full-stack AI chatbot built with Java and Spring Boot.
 Features multi-provider AI routing, RAG (PDF upload and Q&A),
-conversation memory, token usage display, and a clean chat UI.
+conversation memory, Redis caching, PostgreSQL storage, and a clean chat UI.
 
 ## Screenshots
 
@@ -22,7 +22,9 @@ conversation memory, token usage display, and a clean chat UI.
 - Ollama (llama3.2) — local fallback
 - Ollama (nomic-embed-text) — embeddings for RAG
 - Chroma — vector database for RAG
-- Docker — for running Chroma
+- Redis — response caching
+- PostgreSQL — permanent conversation storage
+- Docker — for running Chroma, Redis, and PostgreSQL
 
 ## Project Structure
 
@@ -38,6 +40,11 @@ src/main/java/project/chatbot/
 │ ├── ChatService.java
 │ ├── ChatResult.java
 │ └── RagService.java
+├── entity/
+│ └── ChatMessageEntity.java
+├── repository/
+│ ├── ChatMessageRepository.java
+│ └── PostgresChatMemoryRepository.java
 ├── exception/
 │ ├── GlobalExceptionHandler.java
 │ └── ErrorResponse.java
@@ -55,6 +62,8 @@ src/main/resources/
 - Automatic fallback — if Gemini or OpenRouter fails, Ollama takes over
 - Conversation memory — AI remembers context within a session (configurable window)
 - RAG pipeline — upload a PDF and ask questions about it
+- Redis caching — repeated questions are served instantly without hitting the AI (1 hour TTL)
+- PostgreSQL storage — conversation history survives app restarts
 - Token usage display — prompt, completion and total tokens shown below every response
 - Session management — each new chat gets a unique session ID
 - Light and dark theme toggle
@@ -63,7 +72,7 @@ src/main/resources/
 
 ## Prerequisites
 
-Before running the app, make sure these are running:
+Before running the app, make sure these are all running:
 
 **Ollama** — in a terminal:
 
@@ -75,6 +84,16 @@ ollama pull nomic-embed-text
 **Chroma** — in a terminal (Docker required):
 
 docker run -d --name chroma -p 8000:8000 chromadb/chroma
+
+
+**Redis** — in a terminal (Docker required):
+
+docker run -d --name chatbot-redis -p 6380:6379 redis:latest
+
+
+**PostgreSQL** — in a terminal (Docker required):
+
+docker run -d --name chatbot-postgres -p 5432:5432 -e POSTGRES_DB=chatbotdb -e POSTGRES_USER=chatbot -e POSTGRES_PASSWORD=chatbot123 -e TZ=UTC -e PGTZ=UTC postgres:latest
 
 
 ## Setup
@@ -159,6 +178,9 @@ Key properties in `application.properties`:
 | `spring.ai.model.embedding` | Which provider handles embeddings | ollama |
 | `spring.ai.ollama.embedding.model` | Ollama embedding model | nomic-embed-text |
 | `spring.ai.vectorstore.chroma.collection-name` | Chroma collection name | chatbot-docs |
+| `spring.data.redis.host` | Redis host | localhost |
+| `spring.data.redis.port` | Redis port | 6380 |
+| `spring.datasource.url` | PostgreSQL connection URL | jdbc:postgresql://localhost:5432/chatbotdb |
 
 ## What I learned building this
 
@@ -168,6 +190,9 @@ Key properties in `application.properties`:
 - Conversation memory with MessageWindowChatMemory
 - RAG pipeline — PDF ingestion, vector embeddings, similarity search
 - Chroma vector database integration
+- Redis caching with @Cacheable and configurable TTL
+- PostgreSQL integration with Spring Data JPA
+- Implementing Spring AI's ChatMemoryRepository for custom storage
 - Token usage tracking and display
 - DTO pattern for clean request/response handling
 - Global exception handling with @RestControllerAdvice
