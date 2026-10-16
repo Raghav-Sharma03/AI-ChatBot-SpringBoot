@@ -3,7 +3,7 @@ package project.chatbot;
 import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.memory.ChatMemory;
-import org.springframework.ai.chat.memory.InMemoryChatMemoryRepository;
+import project.chatbot.repository.PostgresChatMemoryRepository;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.google.genai.GoogleGenAiChatModel;
 import org.springframework.ai.ollama.OllamaChatModel;
@@ -19,7 +19,6 @@ import org.springframework.cache.CacheManager;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
-import java.time.Duration;
 import java.time.Duration;
 import java.util.List;
 
@@ -38,13 +37,13 @@ public class AppConfig {
     @Value("${chatbot.memory.max-messages:10}")
     private int maxMessages;
 
-    @Bean
-    public ChatMemory chatMemory() {
-        return MessageWindowChatMemory.builder()
-                .chatMemoryRepository(new InMemoryChatMemoryRepository())
-                .maxMessages(maxMessages)
-                .build();
-    }
+@Bean
+public ChatMemory chatMemory(PostgresChatMemoryRepository postgresRepo) {
+    return MessageWindowChatMemory.builder()
+            .chatMemoryRepository(postgresRepo)
+            .maxMessages(maxMessages)
+            .build();
+}
 
     @Bean
     @Primary
