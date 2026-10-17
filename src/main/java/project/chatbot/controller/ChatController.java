@@ -8,21 +8,22 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.validation.Valid;
 import project.chatbot.service.ChatResult;
 import project.chatbot.service.ChatService;
 
 @RestController
 @RequestMapping("/api")
-public class Chat_Controller {
+public class ChatController {
 
     private final ChatService chatService;
 
-    public Chat_Controller(ChatService chatService) {
+    public ChatController(ChatService chatService) {
         this.chatService = chatService;
     }
 
     @PostMapping("/chat")
-    public ChatResponse chat(@RequestBody ChatRequest request,
+    public ChatResponse chat(@Valid @RequestBody ChatRequest request,
                              @RequestParam(defaultValue = "default-session") String sessionId) {
         LocalDateTime requestTime = LocalDateTime.now();
         ChatResult result = chatService.chat(request.getMessage(), sessionId);
