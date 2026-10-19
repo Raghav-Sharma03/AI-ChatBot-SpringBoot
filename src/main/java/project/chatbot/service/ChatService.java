@@ -16,7 +16,6 @@ import org.springframework.stereotype.Service;
 public class ChatService {
 
     private static final Logger log = LoggerFactory.getLogger(ChatService.class);
-    private static final int SHORT_MESSAGE_THRESHOLD = 100;
 
     private final ChatClient geminiClient;
     private final ChatClient openRouterClient;
@@ -24,46 +23,41 @@ public class ChatService {
     private final ChatMemory chatMemory;
     private final RagService ragService;
 
-public ChatService(
-        @Qualifier("geminiClient") ChatClient geminiClient,
-        @Qualifier("openRouterClient") ChatClient openRouterClient,
-        @Qualifier("ollamaClient") ChatClient ollamaClient,
-        ChatMemory chatMemory,
-        RagService ragService) {
-    this.geminiClient = geminiClient;
-    this.openRouterClient = openRouterClient;
-    this.ollamaClient = ollamaClient;
-    this.chatMemory = chatMemory;
-    this.ragService = ragService;
-}
-
-public ChatResult chat(String message, String sessionId) {
-    List<Document> docs = ragService.search(message);
-    String augmentedMessage = message;
-
-    if (!docs.isEmpty()) {
-        String context = docs.stream()
-                .map(Document::getText)
-                .collect(Collectors.joining("\n\n"));
-        augmentedMessage = "Use the following context to answer the question.\n\n"
-                + "Context:\n" + context
-                + "\n\nQuestion: " + message;
-        log.info("RAG context added — {} chunks found.", docs.size());
-    } else {
-        log.info("No RAG context found. Answering from model knowledge.");
+    public ChatService(
+            @Qualifier("geminiClient") ChatClient geminiClient,
+            @Qualifier("openRouterClient") ChatClient openRouterClient,
+            @Qualifier("ollamaClient") ChatClient ollamaClient,
+            ChatMemory chatMemory,
+            RagService ragService) {
+        this.geminiClient = geminiClient;
+        this.openRouterClient = openRouterClient;
+        this.ollamaClient = ollamaClient;
+        this.chatMemory = chatMemory;
+        this.ragService = ragService;
     }
 
-    if (augmentedMessage.length() < SHORT_MESSAGE_THRESHOLD) {
-        log.info("Routing to Gemini — short message ({} chars)", message.length());
+    public ChatResult chat(String message, String sessionId) {
+        List<Document> docs = ragService.search(message);
+        String augmentedMessage = message;
+
+        if (!docs.isEmpty()) {
+            String context = docs.stream()
+                    .map(Document::getText)
+                    .collect(Collectors.joining("\n\n"));
+            augmentedMessage = "Use the following context to answer the question.\n\n"
+                    + "Context:\n" + context
+                    + "\n\nQuestion: " + message;
+            log.info("RAG context added — {} chunks found.", docs.size());
+        } else {
+            log.info("No RAG context found. Answering from model knowledge.");
+        }
+
         return tryGemini(augmentedMessage, sessionId);
-    } else {
-        log.info("Routing to OpenRouter — long message ({} chars)", message.length());
-        return tryOpenRouter(augmentedMessage, sessionId);
     }
-}
 
     private ChatResult tryGemini(String message, String sessionId) {
         try {
+            log.info("Routing to Gemini.");
             ChatResponse response = geminiClient.prompt()
                     .user(message)
                     .advisors(a -> a
@@ -73,13 +67,14 @@ public ChatResult chat(String message, String sessionId) {
                     .chatResponse();
             return toChatResult(response);
         } catch (Exception e) {
-            log.warn("Gemini failed: {}. Falling back to Ollama.", e.getMessage(), e);
-            return tryOllama(message, sessionId);
+            log.warn("Gemini failed: {}. Falling back to OpenRouter.", e.getMessage());
+            return tryOpenRouter(message, sessionId);
         }
     }
 
     private ChatResult tryOpenRouter(String message, String sessionId) {
         try {
+            log.info("Routing to OpenRouter.");
             ChatResponse response = openRouterClient.prompt()
                     .user(message)
                     .advisors(a -> a
@@ -89,13 +84,13 @@ public ChatResult chat(String message, String sessionId) {
                     .chatResponse();
             return toChatResult(response);
         } catch (Exception e) {
-            log.warn("OpenRouter failed: {}. Falling back to Ollama.", e.getMessage(), e);
+            log.warn("OpenRouter failed: {}. Falling back to Ollama.", e.getMessage());
             return tryOllama(message, sessionId);
         }
     }
 
     private ChatResult tryOllama(String message, String sessionId) {
-        log.info("Using Ollama fallback.");
+        log.info("Routing to Ollama.");
         ChatResponse response = ollamaClient.prompt()
                 .user(message)
                 .advisors(a -> a
