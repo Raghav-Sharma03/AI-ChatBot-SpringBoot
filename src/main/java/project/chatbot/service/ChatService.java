@@ -11,6 +11,7 @@ import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import java.time.Instant;
 
 @Service
 public class ChatService {
@@ -22,6 +23,7 @@ public class ChatService {
     private final ChatClient ollamaClient;
     private final ChatMemory chatMemory;
     private final RagService ragService;
+    private volatile Instant geminiCooldownUntil = Instant.MIN;
 
     public ChatService(
             @Qualifier("geminiClient") ChatClient geminiClient,
@@ -56,6 +58,10 @@ public class ChatService {
     }
 
     private ChatResult tryGemini(String message, String sessionId) {
+        if (Instant.now().isBefore(geminiCooldownUntil)) {
+            log.info("Gemini is in cooldown. Routing directly to OpenRouter.");
+            return tryOpenRouter(message, sessionId);
+        }
         try {
             log.info("Routing to Gemini.");
             ChatResponse response = geminiClient.prompt()
@@ -65,9 +71,11 @@ public class ChatService {
                             .param(ChatMemory.CONVERSATION_ID, sessionId))
                     .call()
                     .chatResponse();
+                        geminiCooldownUntil = Instant.MIN;
             return toChatResult(response);
         } catch (Exception e) {
             log.warn("Gemini failed: {}. Falling back to OpenRouter.", e.getMessage());
+            geminiCooldownUntil = Instant.now().plusSeconds(300);
             return tryOpenRouter(message, sessionId);
         }
     }
