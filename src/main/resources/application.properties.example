@@ -51,3 +51,6 @@ spring.jpa.open-in-view=false
 
 management.endpoints.web.exposure.include=health
 management.endpoint.health.show-details=never
+
+server.tomcat.connection-timeout=60s
+spring.mvc.async.request-timeout=60000g

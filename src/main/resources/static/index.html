@@ -479,6 +479,13 @@
       </button>
       <div id="upload-status" style="font-size:11px;color:var(--text-secondary);padding:4px;"></div>
     </div>
+        <div class="sidebar-section">
+      <div class="sidebar-label">Response Mode</div>
+      <button class="new-chat-btn" id="mode-btn" type="button">
+        <svg viewBox="0 0 24 24"><polyline points="13 2 13 9 20 9"/><polyline points="11 22 11 15 4 15"/><line x1="3" y1="3" x2="21" y2="21"/></svg>
+        <span id="mode-label">Standard (Gemini)</span>
+      </button>
+    </div>
 
     <div class="sidebar-footer">
       <span class="sidebar-tagline">Your intelligent assistant</span>
@@ -656,30 +663,47 @@ async function send(text) {
   showTyping();
 
   try {
-    const res = await fetch('/api/chat?sessionId=' + encodeURIComponent(sessionId), {
+    const endpoint = streamingMode ? '/api/chat/stream/ollama' : '/api/chat/stream';
+    const res = await fetch(endpoint + '?sessionId=' + encodeURIComponent(sessionId), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: text })
     });
 
-    const data = await res.json();
+    if (!res.ok) {
+      hideTyping();
+      addMessage('ai', 'Something went wrong. Please try again.', null, true);
+      return;
+    }
 
     hideTyping();
 
-    if (!res.ok || !data.message) {
-      const errMsg = (data && data.error) ? data.error : 'Something went wrong. Please try again.';
-      addMessage('ai', errMsg, null, true);
-    } else {
-      let meta = formatTime(data.responseTime);
-      if (data.requestTime && data.responseTime) {
-        const diff = (new Date(data.responseTime) - new Date(data.requestTime)) / 1000;
-        if (diff >= 0) meta += '  ·  Responded in ' + diff.toFixed(1) + 's';
+    // Create empty AI bubble
+    const bubble = addMessage('ai', '', timeStr, false);
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let fullText = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value, { stream: true });
+
+      // SSE format: each chunk looks like "data:word\n\n"
+      // We extract just the text after "data:"
+      const lines = chunk.split('\n');
+      for (const line of lines) {
+        if (line.startsWith('data:')) {
+          const token = line.substring(5);
+          fullText += token;
+          bubble.textContent = fullText;
+          scrollBottom();
+        }
       }
-      if (data.totalTokens && data.totalTokens > 0) {
-        meta += '  ·  Tokens — prompt: ' + data.promptTokens + ', completion: ' + data.completionTokens + ', total: ' + data.totalTokens;
-      }
-      addMessage('ai', data.message, meta, false);
     }
+
   } catch (e) {
     hideTyping();
     addMessage('ai', 'Could not reach the server. Make sure the backend is running.', null, true);
@@ -690,7 +714,6 @@ async function send(text) {
     scrollBottom();
   }
 }
-
 // New chat
 function resetChat() {
   sessionId = generateSessionId();
@@ -754,6 +777,18 @@ pdfInput.addEventListener('change', async () => {
     uploadBtn.disabled = false;
     pdfInput.value = '';
   }
+});
+// Mode toggle
+let streamingMode = false;
+
+const modeBtn = document.getElementById('mode-btn');
+const modeLabel = document.getElementById('mode-label');
+
+modeBtn.addEventListener('click', () => {
+  streamingMode = !streamingMode;
+  modeLabel.textContent = streamingMode ? 'Stream (Ollama)' : 'Standard (Gemini)';
+  modeBtn.style.borderColor = streamingMode ? 'var(--accent)' : '';
+  modeBtn.style.color = streamingMode ? 'var(--text-primary)' : '';
 });
 
 // Init
