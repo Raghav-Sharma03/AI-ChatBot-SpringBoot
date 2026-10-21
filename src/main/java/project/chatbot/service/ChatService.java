@@ -136,6 +136,10 @@ private Flux<String> streamFromOllama(String message) {
             .stream()
             .content();
 }
+      public void deleteConversation(String sessionId) {
+        chatMemory.clear(sessionId);
+        log.info("Conversation deleted for session: {}", sessionId);
+    }
 
     private ChatResult tryGemini(String message, String sessionId) {
         if (Instant.now().isBefore(geminiCooldownUntil)) {
