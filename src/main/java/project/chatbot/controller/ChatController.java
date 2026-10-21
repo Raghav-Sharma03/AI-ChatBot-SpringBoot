@@ -7,7 +7,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import org.springframework.http.MediaType;
 import jakarta.validation.Valid;
 import project.chatbot.service.ChatResult;
 import project.chatbot.service.ChatService;
@@ -39,4 +40,44 @@ public class ChatController {
                 result.getTotalTokens()
         );
     }
+@PostMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+public SseEmitter streamChat(@Valid @RequestBody ChatRequest request,
+                             @RequestParam(defaultValue = "default-session") String sessionId) {
+    SseEmitter emitter = new SseEmitter(60_000L);
+
+    chatService.streamChat(request.getMessage(), sessionId)
+            .subscribe(
+                    token -> {
+                        try {
+                            emitter.send(SseEmitter.event().data(token));
+                        } catch (Exception e) {
+                            emitter.completeWithError(e);
+                        }
+                    },
+                    emitter::completeWithError,
+                    emitter::complete
+            );
+
+    return emitter;
+}
+@PostMapping(value = "/chat/stream/ollama", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+public SseEmitter streamChatOllama(@Valid @RequestBody ChatRequest request,
+                                   @RequestParam(defaultValue = "default-session") String sessionId) {
+    SseEmitter emitter = new SseEmitter(60_000L);
+
+    chatService.streamChatOllama(request.getMessage(), sessionId)
+            .subscribe(
+                    token -> {
+                        try {
+                            emitter.send(SseEmitter.event().data(token));
+                        } catch (Exception e) {
+                            emitter.completeWithError(e);
+                        }
+                    },
+                    emitter::completeWithError,
+                    emitter::complete
+            );
+
+    return emitter;
+}
 }

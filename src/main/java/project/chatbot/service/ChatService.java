@@ -12,6 +12,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import java.time.Instant;
+import reactor.core.publisher.Flux;
 
 @Service
 public class ChatService {
@@ -56,6 +57,85 @@ public class ChatService {
 
         return tryGemini(augmentedMessage, sessionId);
     }
+    public Flux<String> streamChat(String message, String sessionId) {
+    List<Document> docs = ragService.search(message);
+    String augmentedMessage = message;
+
+    if (!docs.isEmpty()) {
+        String context = docs.stream()
+                .map(Document::getText)
+                .collect(Collectors.joining("\n\n"));
+        augmentedMessage = "Use the following context to answer the question.\n\n"
+                + "Context:\n" + context
+                + "\n\nQuestion: " + message;
+        log.info("RAG context added for streaming — {} chunks found.", docs.size());
+    } else {
+        log.info("No RAG context found for streaming.");
+    }
+
+    return streamFromGemini(augmentedMessage);
+}
+
+private Flux<String> streamFromGemini(String message) {
+    if (Instant.now().isBefore(geminiCooldownUntil)) {
+        log.info("Gemini in cooldown. Streaming from OpenRouter.");
+        return streamFromOpenRouter(message);
+    }
+    try {
+        log.info("Streaming from Gemini.");
+        return geminiClient.prompt()
+                .user(message)
+                .stream()
+                .content();
+    } catch (Exception e) {
+        log.warn("Gemini stream failed: {}. Falling back to OpenRouter.", e.getMessage());
+        geminiCooldownUntil = Instant.now().plusSeconds(300);
+        return streamFromOpenRouter(message);
+    }
+}
+
+private Flux<String> streamFromOpenRouter(String message) {
+    try {
+        log.info("Streaming from OpenRouter.");
+        return openRouterClient.prompt()
+                .user(message)
+                .stream()
+                .content();
+    } catch (Exception e) {
+        log.warn("OpenRouter stream failed: {}. Falling back to Ollama.", e.getMessage());
+        return streamFromOllama(message);
+    }
+}
+
+private Flux<String> streamFromOllama(String message) {
+    log.info("Streaming from Ollama.");
+    return ollamaClient.prompt()
+            .user(message)
+            .stream()
+            .content();
+}
+     public Flux<String> streamChatOllama(String message, String sessionId) {
+    List<Document> docs = ragService.search(message);
+    String augmentedMessage = message;
+
+    if (!docs.isEmpty()) {
+        String context = docs.stream()
+                .map(Document::getText)
+                .collect(Collectors.joining("\n\n"));
+        augmentedMessage = "Use the following context to answer the question.\n\n"
+                + "Context:\n" + context
+                + "\n\nQuestion: " + message;
+        log.info("RAG context added for Ollama streaming — {} chunks found.", docs.size());
+    } else {
+        log.info("No RAG context found for Ollama streaming.");
+    }
+
+    log.info("Streaming directly from Ollama.");
+    return ollamaClient.prompt()
+            .user(augmentedMessage)
+            .stream()
+            .content();
+}
 
     private ChatResult tryGemini(String message, String sessionId) {
         if (Instant.now().isBefore(geminiCooldownUntil)) {
