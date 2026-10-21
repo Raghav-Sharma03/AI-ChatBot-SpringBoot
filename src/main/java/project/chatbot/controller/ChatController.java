@@ -2,6 +2,9 @@ package project.chatbot.controller;
 
 import java.time.LocalDateTime;
 
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -79,5 +82,10 @@ public SseEmitter streamChatOllama(@Valid @RequestBody ChatRequest request,
             );
 
     return emitter;
+}
+@DeleteMapping("/chat/{sessionId}")
+public ResponseEntity<Void> deleteConversation(@PathVariable String sessionId) {
+    chatService.deleteConversation(sessionId);
+    return ResponseEntity.noContent().build();
 }
 }
