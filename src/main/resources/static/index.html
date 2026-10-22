@@ -566,7 +566,7 @@
     </div>
         <div class="sidebar-section">
       <div class="sidebar-label">Documents</div>
-      <input type="file" id="pdf-input" accept=".pdf" style="display:none">
+      <input type="file" id="pdf-input" accept=".pdf" style="display:none" multiple>
       <button class="new-chat-btn" id="upload-btn" type="button">
         <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
         Upload PDF
@@ -867,14 +867,16 @@ const uploadStatus = document.getElementById('upload-status');
 uploadBtn.addEventListener('click', () => pdfInput.click());
 
 pdfInput.addEventListener('change', async () => {
-  const file = pdfInput.files[0];
-  if (!file) return;
+  const files = pdfInput.files;
+  if (!files || files.length === 0) return;
 
-  uploadStatus.textContent = 'Uploading...';
+  uploadStatus.textContent = 'Uploading ' + files.length + ' file(s)...';
   uploadBtn.disabled = true;
 
   const formData = new FormData();
-  formData.append('file', file);
+  for (const file of files) {
+    formData.append('files', file);
+  }
 
   try {
     const res = await fetch('/api/documents/upload', {
@@ -882,7 +884,7 @@ pdfInput.addEventListener('change', async () => {
       body: formData
     });
     const text = await res.text();
-    uploadStatus.textContent = res.ok ? '✓ ' + file.name : '✗ ' + text;
+    uploadStatus.textContent = res.ok ? text : '✗ ' + text;
   } catch (e) {
     uploadStatus.textContent = '✗ Could not reach server.';
   } finally {
