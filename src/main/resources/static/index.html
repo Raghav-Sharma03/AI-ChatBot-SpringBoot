@@ -385,12 +385,12 @@
       max-height: 200px;
       line-height: 1.5;
       transition: border-color 0.15s, box-shadow 0.15s;
-      scrollbar-width: thin;
+      scrollbar-width: none;
     }
 
     .input-box::placeholder { color: var(--text-muted); }
     .input-box:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12); }
-    .input-box:disabled { opacity: 0.5; }
+    .input-box::-webkit-scrollbar { display: none; }
 
     .send-btn {
       position: absolute;
