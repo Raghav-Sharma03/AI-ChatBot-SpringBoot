@@ -12,6 +12,8 @@ import org.springframework.web.multipart.MultipartFile;
 import project.chatbot.service.RagService;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/documents")
@@ -25,12 +27,20 @@ public class DocumentController {
         this.ragService = ragService;
     }
 
-    @PostMapping("/upload")
-    public ResponseEntity<String> upload(@RequestParam("file") MultipartFile file) {
-        if (file.isEmpty()) {
-            return ResponseEntity.badRequest().body("Please select a PDF file to upload.");
-        }
+@PostMapping("/upload")
+public ResponseEntity<String> upload(@RequestParam("files") List<MultipartFile> files) {
+    if (files == null || files.isEmpty()) {
+        return ResponseEntity.badRequest().body("Please select at least one PDF file to upload.");
+    }
 
+    List<String> success = new ArrayList<>();
+    List<String> failed = new ArrayList<>();
+
+    for (MultipartFile file : files) {
+        if (file.isEmpty()) {
+            failed.add(file.getOriginalFilename() + " (empty)");
+            continue;
+        }
         try {
             ByteArrayResource resource = new ByteArrayResource(file.getBytes()) {
                 @Override
@@ -38,13 +48,25 @@ public class DocumentController {
                     return file.getOriginalFilename();
                 }
             };
-
             ragService.ingest(resource);
-            return ResponseEntity.ok("File uploaded and ingested successfully: " + file.getOriginalFilename());
-
+            success.add(file.getOriginalFilename());
         } catch (IOException e) {
-            log.error("Failed to process uploaded file: {}", e.getMessage());
-            return ResponseEntity.internalServerError().body("Failed to process file.");
+            log.error("Failed to process file {}: {}", file.getOriginalFilename(), e.getMessage());
+            failed.add(file.getOriginalFilename());
         }
     }
+
+    StringBuilder result = new StringBuilder();
+    if (!success.isEmpty()) {
+        result.append("✓ Uploaded: ").append(String.join(", ", success));
+    }
+    if (!failed.isEmpty()) {
+        if (!result.isEmpty()) result.append("\n");
+        result.append("✗ Failed: ").append(String.join(", ", failed));
+    }
+
+    return success.isEmpty()
+        ? ResponseEntity.internalServerError().body(result.toString())
+        : ResponseEntity.ok(result.toString());
+}
 }
