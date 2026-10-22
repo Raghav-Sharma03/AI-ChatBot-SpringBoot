@@ -435,6 +435,100 @@
       0%, 70%, 100% { opacity: 0.3; transform: translateY(0); }
       35% { opacity: 1; transform: translateY(-4px); }
     }
+    /* RESPONSE MODE CARDS */
+.mode-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mode-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--chip-bg);
+  border: 1px solid var(--chip-border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  text-align: left;
+  width: 100%;
+  position: relative;
+}
+
+.mode-card:hover {
+  border-color: var(--accent);
+}
+
+.mode-card.active {
+  border-color: var(--chip-border);
+  background: rgba(124, 58, 237, 0.08);
+  border-left: 3px solid var(--accent);
+}
+
+.mode-card-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--new-chat-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.mode-card.active .mode-card-icon {
+  background: rgba(124, 58, 237, 0.15);
+}
+
+.mode-card-icon svg {
+  width: 15px;
+  height: 15px;
+  stroke: var(--text-secondary);
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.mode-card.active .mode-card-icon svg {
+  stroke: var(--accent);
+}
+
+.mode-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.mode-card-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.mode-card-sub {
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1;
+}
+
+.mode-radio {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid var(--text-muted);
+  flex-shrink: 0;
+  transition: border-color 0.15s;
+}
+
+.mode-card.active .mode-radio {
+  border-color: var(--accent);
+  background: radial-gradient(circle, var(--accent) 40%, transparent 40%);
+}
 
     /* MOBILE */
     @media (max-width: 680px) {
@@ -479,13 +573,31 @@
       </button>
       <div id="upload-status" style="font-size:11px;color:var(--text-secondary);padding:4px;"></div>
     </div>
-        <div class="sidebar-section">
-      <div class="sidebar-label">Response Mode</div>
-      <button class="new-chat-btn" id="mode-btn" type="button">
-        <svg viewBox="0 0 24 24"><polyline points="13 2 13 9 20 9"/><polyline points="11 22 11 15 4 15"/><line x1="3" y1="3" x2="21" y2="21"/></svg>
-        <span id="mode-label">Standard (Gemini)</span>
-      </button>
-    </div>
+<div class="sidebar-section">
+  <div class="sidebar-label">Response Mode</div>
+  <div class="mode-cards">
+    <button class="mode-card active" id="mode-standard" type="button">
+      <div class="mode-card-icon">
+        <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      </div>
+      <div class="mode-card-info">
+        <div class="mode-card-title">Standard</div>
+        <div class="mode-card-sub">Gemini · Fast response</div>
+      </div>
+      <div class="mode-radio"></div>
+    </button>
+    <button class="mode-card" id="mode-stream" type="button">
+      <div class="mode-card-icon">
+        <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </div>
+      <div class="mode-card-info">
+        <div class="mode-card-title">Stream</div>
+        <div class="mode-card-sub">Ollama · Token by token</div>
+      </div>
+      <div class="mode-radio"></div>
+    </button>
+  </div>
+</div>
 
     <div class="sidebar-footer">
       <span class="sidebar-tagline">Your intelligent assistant</span>
@@ -781,14 +893,19 @@ pdfInput.addEventListener('change', async () => {
 // Mode toggle
 let streamingMode = false;
 
-const modeBtn = document.getElementById('mode-btn');
-const modeLabel = document.getElementById('mode-label');
+const modeStandard = document.getElementById('mode-standard');
+const modeStream = document.getElementById('mode-stream');
 
-modeBtn.addEventListener('click', () => {
-  streamingMode = !streamingMode;
-  modeLabel.textContent = streamingMode ? 'Stream (Ollama)' : 'Standard (Gemini)';
-  modeBtn.style.borderColor = streamingMode ? 'var(--accent)' : '';
-  modeBtn.style.color = streamingMode ? 'var(--text-primary)' : '';
+modeStandard.addEventListener('click', () => {
+  streamingMode = false;
+  modeStandard.classList.add('active');
+  modeStream.classList.remove('active');
+});
+
+modeStream.addEventListener('click', () => {
+  streamingMode = true;
+  modeStream.classList.add('active');
+  modeStandard.classList.remove('active');
 });
 
 // Init
