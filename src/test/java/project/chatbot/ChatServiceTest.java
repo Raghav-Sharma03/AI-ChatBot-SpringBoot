@@ -43,7 +43,7 @@ class ChatServiceTest {
     @Test
     void whenRagReturnsDocuments_thenContextIsAdded() {
         Document doc = new Document("Spring AI is a framework.");
-        when(ragService.search("what is spring ai")).thenReturn(List.of(doc));
+        when(ragService.search("what is spring ai", "session-1")).thenReturn(List.of(doc));
         when(geminiClient.prompt()).thenThrow(new RuntimeException("Gemini down"));
         when(openRouterClient.prompt()).thenThrow(new RuntimeException("OpenRouter down"));
         when(ollamaClient.prompt()).thenThrow(new RuntimeException("Ollama down"));
@@ -51,12 +51,12 @@ class ChatServiceTest {
         assertThrows(RuntimeException.class,
                 () -> chatService.chat("what is spring ai", "session-1"));
 
-        verify(ragService, times(1)).search("what is spring ai");
+        verify(ragService, times(1)).search("what is spring ai", "session-1");
     }
 
     @Test
     void whenRagReturnsNoDocuments_thenNoContextAdded() {
-        when(ragService.search("hello")).thenReturn(List.of());
+        when(ragService.search("hello", "session-1")).thenReturn(List.of());
         when(geminiClient.prompt()).thenThrow(new RuntimeException("Gemini down"));
         when(openRouterClient.prompt()).thenThrow(new RuntimeException("OpenRouter down"));
         when(ollamaClient.prompt()).thenThrow(new RuntimeException("Ollama down"));
@@ -64,12 +64,12 @@ class ChatServiceTest {
         assertThrows(RuntimeException.class,
                 () -> chatService.chat("hello", "session-1"));
 
-        verify(ragService, times(1)).search("hello");
+        verify(ragService, times(1)).search("hello", "session-1");
     }
 
     @Test
     void whenGeminiFails_thenOpenRouterIsCalled() {
-        when(ragService.search(anyString())).thenReturn(List.of());
+        when(ragService.search(anyString(), anyString())).thenReturn(List.of());
         when(geminiClient.prompt()).thenThrow(new RuntimeException("Gemini down"));
         when(openRouterClient.prompt()).thenThrow(new RuntimeException("OpenRouter down"));
         when(ollamaClient.prompt()).thenThrow(new RuntimeException("Ollama down"));

@@ -572,6 +572,11 @@
         Upload PDF
       </button>
       <div id="upload-status" style="font-size:11px;color:var(--text-secondary);padding:4px;"></div>
+<button class="new-chat-btn" id="clear-docs-btn" type="button">
+  <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+  Clear Documents
+</button>
+<div id="clear-status" style="font-size:11px;color:var(--text-secondary);padding:4px;"></div>
     </div>
 <div class="sidebar-section">
   <div class="sidebar-label">Response Mode</div>
@@ -873,10 +878,11 @@ pdfInput.addEventListener('change', async () => {
   uploadStatus.textContent = 'Uploading ' + files.length + ' file(s)...';
   uploadBtn.disabled = true;
 
-  const formData = new FormData();
-  for (const file of files) {
-    formData.append('files', file);
-  }
+const formData = new FormData();
+for (const file of files) {
+  formData.append('files', file);
+}
+formData.append('sessionId', sessionId);
 
   try {
     const res = await fetch('/api/documents/upload', {
@@ -892,6 +898,26 @@ pdfInput.addEventListener('change', async () => {
     pdfInput.value = '';
   }
 });
+// Clear Documents
+const clearDocsBtn = document.getElementById('clear-docs-btn');
+const clearStatus = document.getElementById('clear-status');
+
+clearDocsBtn.addEventListener('click', async () => {
+  clearStatus.textContent = 'Clearing...';
+  clearDocsBtn.disabled = true;
+  try {
+    const res = await fetch('/api/documents/clear/' + encodeURIComponent(sessionId), {
+      method: 'DELETE'
+    });
+    const text = await res.text();
+    clearStatus.textContent = res.ok ? '✓ Cleared' : '✗ ' + text;
+  } catch (e) {
+    clearStatus.textContent = '✗ Could not reach server.';
+  } finally {
+    clearDocsBtn.disabled = false;
+  }
+});
+
 // Mode toggle
 let streamingMode = false;
 

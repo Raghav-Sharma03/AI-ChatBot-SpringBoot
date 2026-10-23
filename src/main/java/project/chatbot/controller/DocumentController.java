@@ -4,6 +4,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -28,7 +30,8 @@ public class DocumentController {
     }
 
 @PostMapping("/upload")
-public ResponseEntity<String> upload(@RequestParam("files") List<MultipartFile> files) {
+public ResponseEntity<String> upload(@RequestParam("files") List<MultipartFile> files,
+                                     @RequestParam("sessionId") String sessionId) {
     if (files == null || files.isEmpty()) {
         return ResponseEntity.badRequest().body("Please select at least one PDF file to upload.");
     }
@@ -48,7 +51,7 @@ public ResponseEntity<String> upload(@RequestParam("files") List<MultipartFile> 
                     return file.getOriginalFilename();
                 }
             };
-            ragService.ingest(resource);
+            ragService.ingest(resource, sessionId);
             success.add(file.getOriginalFilename());
         } catch (IOException e) {
             log.error("Failed to process file {}: {}", file.getOriginalFilename(), e.getMessage());
@@ -68,5 +71,10 @@ public ResponseEntity<String> upload(@RequestParam("files") List<MultipartFile> 
     return success.isEmpty()
         ? ResponseEntity.internalServerError().body(result.toString())
         : ResponseEntity.ok(result.toString());
+}
+@DeleteMapping("/clear/{sessionId}")
+public ResponseEntity<String> clearDocuments(@PathVariable String sessionId) {
+    ragService.clearDocuments(sessionId);
+    return ResponseEntity.ok("Documents cleared for session: " + sessionId);
 }
 }
