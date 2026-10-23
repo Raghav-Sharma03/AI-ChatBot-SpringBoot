@@ -1,5 +1,10 @@
 package project.chatbot.service;
 
+import org.springframework.ai.vectorstore.SearchRequest;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
@@ -22,21 +27,54 @@ public class RagService {
         this.vectorStore = vectorStore;
     }
 
-    public void ingest(Resource pdfResource) {
-        log.info("Starting PDF ingestion: {}", pdfResource.getFilename());
+public void ingest(Resource pdfResource, String sessionId) {
+    log.info("Starting PDF ingestion: {} for session: {}", pdfResource.getFilename(), sessionId);
 
-        PagePdfDocumentReader reader = new PagePdfDocumentReader(pdfResource);
-        List<Document> documents = reader.read();
+    PagePdfDocumentReader reader = new PagePdfDocumentReader(pdfResource);
+    List<Document> documents = reader.read();
 
-        TokenTextSplitter splitter = new TokenTextSplitter();
-        List<Document> chunks = splitter.apply(documents);
+    TokenTextSplitter splitter = new TokenTextSplitter();
+    List<Document> chunks = splitter.apply(documents);
 
-        log.info("Split into {} chunks. Storing in Chroma...", chunks.size());
-        vectorStore.add(chunks);
-        log.info("Ingestion complete.");
+    // Tag each chunk with sessionId metadata
+    List<Document> taggedChunks = chunks.stream()
+            .map(doc -> {
+                Map<String, Object> metadata = new HashMap<>(doc.getMetadata());
+                metadata.put("sessionId", sessionId);
+                return new Document(doc.getId(), doc.getText(), metadata);
+            })
+            .collect(Collectors.toList());
+
+    log.info("Split into {} chunks. Storing in Chroma...", taggedChunks.size());
+    vectorStore.add(taggedChunks);
+    log.info("Ingestion complete.");
+}
+
+public List<Document> search(String query, String sessionId) {
+    SearchRequest request = SearchRequest.builder()
+            .query(query)
+            .topK(4)
+            .filterExpression("sessionId == '" + sessionId + "'")
+            .build();
+    return vectorStore.similaritySearch(request);
+}
+
+public void clearDocuments(String sessionId) {
+    log.info("Clearing documents for session: {}", sessionId);
+    SearchRequest request = SearchRequest.builder()
+            .query(" ")
+            .topK(1000)
+            .filterExpression("sessionId == '" + sessionId + "'")
+            .build();
+    List<Document> docs = vectorStore.similaritySearch(request);
+    if (!docs.isEmpty()) {
+        List<String> ids = docs.stream()
+                .map(Document::getId)
+                .collect(Collectors.toList());
+        vectorStore.delete(ids);
+        log.info("Deleted {} document chunks for session: {}", ids.size(), sessionId);
+    } else {
+        log.info("No documents found for session: {}", sessionId);
     }
-
-    public List<Document> search(String query) {
-        return vectorStore.similaritySearch(query);
-    }
+}
 }

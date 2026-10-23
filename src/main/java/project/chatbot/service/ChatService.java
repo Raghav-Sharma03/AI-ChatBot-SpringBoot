@@ -40,7 +40,7 @@ public class ChatService {
     }
 
     public ChatResult chat(String message, String sessionId) {
-        List<Document> docs = ragService.search(message);
+        List<Document> docs = ragService.search(message, sessionId);
         String augmentedMessage = message;
 
         if (!docs.isEmpty()) {
@@ -58,7 +58,7 @@ public class ChatService {
         return tryGemini(augmentedMessage, sessionId);
     }
     public Flux<String> streamChat(String message, String sessionId) {
-    List<Document> docs = ragService.search(message);
+    List<Document> docs = ragService.search(message, sessionId);
     String augmentedMessage = message;
 
     if (!docs.isEmpty()) {
@@ -86,9 +86,14 @@ private Flux<String> streamFromGemini(String message) {
         return geminiClient.prompt()
                 .user(message)
                 .stream()
-                .content();
+                .content()
+                .onErrorResume(e -> {
+                    log.warn("Gemini stream failed: {}. Falling back to OpenRouter.", e.getMessage());
+                    geminiCooldownUntil = Instant.now().plusSeconds(300);
+                    return streamFromOpenRouter(message);
+                });
     } catch (Exception e) {
-        log.warn("Gemini stream failed: {}. Falling back to OpenRouter.", e.getMessage());
+        log.warn("Gemini stream failed at setup: {}. Falling back to OpenRouter.", e.getMessage());
         geminiCooldownUntil = Instant.now().plusSeconds(300);
         return streamFromOpenRouter(message);
     }
@@ -100,9 +105,13 @@ private Flux<String> streamFromOpenRouter(String message) {
         return openRouterClient.prompt()
                 .user(message)
                 .stream()
-                .content();
+                .content()
+                .onErrorResume(e -> {
+                    log.warn("OpenRouter stream failed: {}. Falling back to Ollama.", e.getMessage());
+                    return streamFromOllama(message);
+                });
     } catch (Exception e) {
-        log.warn("OpenRouter stream failed: {}. Falling back to Ollama.", e.getMessage());
+        log.warn("OpenRouter stream failed at setup: {}. Falling back to Ollama.", e.getMessage());
         return streamFromOllama(message);
     }
 }
@@ -115,7 +124,7 @@ private Flux<String> streamFromOllama(String message) {
             .content();
 }
      public Flux<String> streamChatOllama(String message, String sessionId) {
-    List<Document> docs = ragService.search(message);
+    List<Document> docs = ragService.search(message, sessionId);
     String augmentedMessage = message;
 
     if (!docs.isEmpty()) {
