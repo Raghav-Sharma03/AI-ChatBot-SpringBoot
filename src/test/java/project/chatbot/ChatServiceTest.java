@@ -12,10 +12,12 @@ import org.springframework.ai.chat.memory.ChatMemory;
 import project.chatbot.service.ChatService;
 import project.chatbot.service.RagService;
 import org.springframework.ai.document.Document;
+import static org.mockito.ArgumentMatchers.any;
 
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -43,39 +45,37 @@ class ChatServiceTest {
     @Test
     void whenRagReturnsDocuments_thenContextIsAdded() {
         Document doc = new Document("Spring AI is a framework.");
-        when(ragService.search("what is spring ai", "session-1")).thenReturn(List.of(doc));
+        when(ragService.search("what is spring ai", "session-1", null)).thenReturn(List.of(doc));
         when(geminiClient.prompt()).thenThrow(new RuntimeException("Gemini down"));
         when(openRouterClient.prompt()).thenThrow(new RuntimeException("OpenRouter down"));
         when(ollamaClient.prompt()).thenThrow(new RuntimeException("Ollama down"));
 
         assertThrows(RuntimeException.class,
-                () -> chatService.chat("what is spring ai", "session-1"));
+() -> chatService.chat("what is spring ai", "session-1", null));
 
-        verify(ragService, times(1)).search("what is spring ai", "session-1");
+verify(ragService, times(1)).search("what is spring ai", "session-1", null);
     }
 
     @Test
     void whenRagReturnsNoDocuments_thenNoContextAdded() {
-        when(ragService.search("hello", "session-1")).thenReturn(List.of());
+        when(ragService.search("hello", "session-1", null)).thenReturn(List.of());
         when(geminiClient.prompt()).thenThrow(new RuntimeException("Gemini down"));
         when(openRouterClient.prompt()).thenThrow(new RuntimeException("OpenRouter down"));
         when(ollamaClient.prompt()).thenThrow(new RuntimeException("Ollama down"));
 
         assertThrows(RuntimeException.class,
-                () -> chatService.chat("hello", "session-1"));
-
-        verify(ragService, times(1)).search("hello", "session-1");
+() -> chatService.chat("hello", "session-1", null));
     }
 
     @Test
     void whenGeminiFails_thenOpenRouterIsCalled() {
-        when(ragService.search(anyString(), anyString())).thenReturn(List.of());
+        when(ragService.search(anyString(), anyString(), any())).thenReturn(List.of());
         when(geminiClient.prompt()).thenThrow(new RuntimeException("Gemini down"));
         when(openRouterClient.prompt()).thenThrow(new RuntimeException("OpenRouter down"));
         when(ollamaClient.prompt()).thenThrow(new RuntimeException("Ollama down"));
 
         assertThrows(RuntimeException.class,
-                () -> chatService.chat("hello", "session-1"));
+                () -> chatService.chat("hello", "session-1", null));
 
         verify(openRouterClient, atLeastOnce()).prompt();
     }

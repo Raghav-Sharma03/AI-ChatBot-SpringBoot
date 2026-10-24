@@ -72,9 +72,10 @@ public ResponseEntity<String> upload(@RequestParam("files") List<MultipartFile> 
         ? ResponseEntity.internalServerError().body(result.toString())
         : ResponseEntity.ok(result.toString());
 }
-@DeleteMapping("/clear/{sessionId}")
-public ResponseEntity<String> clearDocuments(@PathVariable String sessionId) {
-    ragService.clearDocuments(sessionId);
-    return ResponseEntity.ok("Documents cleared for session: " + sessionId);
+@DeleteMapping("/{sessionId}/{fileName}")
+public ResponseEntity<String> deleteDocument(@PathVariable String sessionId,
+                                              @PathVariable String fileName) {
+    ragService.deleteDocument(sessionId, fileName);
+    return ResponseEntity.ok("Deleted: " + fileName);
 }
 }
