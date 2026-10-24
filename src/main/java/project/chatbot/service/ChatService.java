@@ -39,8 +39,8 @@ public class ChatService {
         this.ragService = ragService;
     }
 
-    public ChatResult chat(String message, String sessionId) {
-        List<Document> docs = ragService.search(message, sessionId);
+public ChatResult chat(String message, String sessionId, List<String> selectedFiles) {
+    List<Document> docs = ragService.search(message, sessionId, selectedFiles);
         String augmentedMessage = message;
 
         if (!docs.isEmpty()) {
@@ -57,8 +57,8 @@ public class ChatService {
 
         return tryGemini(augmentedMessage, sessionId);
     }
-    public Flux<String> streamChat(String message, String sessionId) {
-    List<Document> docs = ragService.search(message, sessionId);
+    public Flux<String> streamChat(String message, String sessionId, List<String> selectedFiles) {
+    List<Document> docs = ragService.search(message, sessionId, selectedFiles);
     String augmentedMessage = message;
 
     if (!docs.isEmpty()) {
@@ -123,8 +123,8 @@ private Flux<String> streamFromOllama(String message) {
             .stream()
             .content();
 }
-     public Flux<String> streamChatOllama(String message, String sessionId) {
-    List<Document> docs = ragService.search(message, sessionId);
+     public Flux<String> streamChatOllama(String message, String sessionId, List<String> selectedFiles) {
+    List<Document> docs = ragService.search(message, sessionId, selectedFiles);
     String augmentedMessage = message;
 
     if (!docs.isEmpty()) {

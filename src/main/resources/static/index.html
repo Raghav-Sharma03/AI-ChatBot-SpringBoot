@@ -363,6 +363,7 @@
       padding: 16px 24px 24px;
       background: var(--bg);
       border-top: 1px solid var(--border);
+      position: relative;
     }
 
     .input-wrap {
@@ -376,7 +377,7 @@
       background: var(--input-bg);
       border: 1px solid var(--input-border);
       border-radius: 14px;
-      padding: 14px 52px 14px 18px;
+      padding: 14px 52px 14px 52px;
       font-family: inherit;
       font-size: 15px;
       color: var(--text-primary);
@@ -391,6 +392,27 @@
     .input-box::placeholder { color: var(--text-muted); }
     .input-box:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12); }
     .input-box::-webkit-scrollbar { display: none; }
+
+    .attach-btn {
+      position: absolute;
+      left: 10px;
+      bottom: 10px;
+      width: 34px;
+      height: 34px;
+      border: 1px solid var(--input-border);
+      border-radius: 8px;
+      background: none;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+      flex-shrink: 0;
+    }
+
+    .attach-btn:hover { color: var(--text-primary); border-color: var(--accent); }
+    .attach-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
     .send-btn {
       position: absolute;
@@ -529,6 +551,159 @@
   border-color: var(--accent);
   background: radial-gradient(circle, var(--accent) 40%, transparent 40%);
 }
+    /* ATTACHMENT DROPDOWN */
+    .attach-dropdown {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 560px;
+      max-width: 90vw;
+      max-height: 80vh;
+      background: var(--sidebar-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+      z-index: 200;
+      overflow: hidden;
+    }
+
+    .attach-dropdown-inner {
+      padding: 12px 0;
+    }
+
+    .attach-search-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 20px;
+    }
+
+    .attach-search-wrap svg {
+      width: 14px;
+      height: 14px;
+      stroke: var(--text-muted);
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex-shrink: 0;
+    }
+
+    .attach-search-input {
+      flex: 1;
+      background: none;
+      border: none;
+      outline: none;
+      font-family: inherit;
+      font-size: 13px;
+      color: var(--text-primary);
+    }
+
+    .attach-search-input::placeholder { color: var(--text-muted); }
+
+    .attach-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 4px 0;
+    }
+
+    .attach-upload-option {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 20px;
+      cursor: pointer;
+      font-size: 14px;
+      color: var(--text-primary);
+      transition: background 0.15s;
+    }
+
+    .attach-upload-option:hover { background: var(--new-chat-hover); }
+
+    .attach-upload-option svg {
+      width: 15px;
+      height: 15px;
+      stroke: var(--text-secondary);
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex-shrink: 0;
+    }
+
+    .attach-files-label {
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--text-muted);
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      padding: 8px 20px 4px;
+    }
+
+    .attach-files-list {
+      max-height: 320px;
+      overflow-y: auto;
+    }
+
+    .attach-empty-hint {
+      font-size: 13px;
+      color: var(--text-muted);
+      padding: 12px 20px;
+    }
+
+    .attach-file-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 20px;
+      transition: background 0.15s;
+    }
+
+    .attach-file-row:hover { background: var(--new-chat-hover); }
+
+    .attach-file-checkbox {
+      width: 15px;
+      height: 15px;
+      accent-color: var(--accent);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .attach-file-icon {
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .attach-file-name {
+      flex: 1;
+      font-size: 12px;
+      color: var(--text-primary);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .attach-file-delete {
+      background: none;
+      border: none;
+      color: #f87171;
+      cursor: pointer;
+      font-size: 14px;
+      padding: 2px 4px;
+      flex-shrink: 0;
+      line-height: 1;
+      transition: color 0.15s;
+    }
+
+    .attach-file-delete:hover { color: #ef4444; }
+
+    .attach-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 199;
+    }
 
     /* MOBILE */
     @media (max-width: 680px) {
@@ -545,6 +720,7 @@
 </head>
 <body>
 <div class="app">
+  <div class="attach-overlay" id="attach-overlay" style="display:none"></div>
 
   <!-- SIDEBAR -->
   <aside class="sidebar">
@@ -564,20 +740,7 @@
         <div class="session-id-text" id="session-display"></div>
       </div>
     </div>
-        <div class="sidebar-section">
-      <div class="sidebar-label">Documents</div>
-      <input type="file" id="pdf-input" accept=".pdf" style="display:none" multiple>
-      <button class="new-chat-btn" id="upload-btn" type="button">
-        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        Upload PDF
-      </button>
-      <div id="upload-status" style="font-size:11px;color:var(--text-secondary);padding:4px;"></div>
-<button class="new-chat-btn" id="clear-docs-btn" type="button">
-  <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
-  Clear Documents
-</button>
-<div id="clear-status" style="font-size:11px;color:var(--text-secondary);padding:4px;"></div>
-    </div>
+
 <div class="sidebar-section">
   <div class="sidebar-label">Response Mode</div>
   <div class="mode-cards">
@@ -636,9 +799,35 @@
       </div>
     </div>
 
+
     <!-- INPUT -->
     <div class="input-area">
+
+      <!-- ATTACHMENT DROPDOWN -->
+      <div class="attach-dropdown" id="attach-dropdown" style="display:none">
+        <div class="attach-dropdown-inner">
+          <div class="attach-search-wrap">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="attach-search" placeholder="Search files..." class="attach-search-input">
+          </div>
+          <div class="attach-divider"></div>
+          <div class="attach-upload-option" id="attach-upload-option">
+            <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <span>Upload from computer</span>
+          </div>
+          <input type="file" id="pdf-input" accept=".pdf" style="display:none" multiple>
+          <div class="attach-divider"></div>
+          <div class="attach-files-label">Uploaded files</div>
+          <div id="attach-files-list" class="attach-files-list">
+            <div class="attach-empty-hint" id="attach-empty-hint">No files uploaded yet.</div>
+          </div>
+          <div id="upload-status" style="font-size:11px;color:var(--text-secondary);padding:4px 8px;"></div>
+        </div>
+      </div>
       <div class="input-wrap">
+        <button class="attach-btn" id="attach-btn" type="button" title="Attach files">
+          <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
         <textarea
           id="input-box"
           class="input-box"
@@ -784,7 +973,7 @@ async function send(text) {
     const res = await fetch(endpoint + '?sessionId=' + encodeURIComponent(sessionId), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: text })
+      body: JSON.stringify({ message: text, selectedFiles: selectedFiles })
     });
 
     if (!res.ok) {
@@ -831,16 +1020,7 @@ async function send(text) {
     scrollBottom();
   }
 }
-// New chat
-function resetChat() {
-  sessionId = generateSessionId();
-  document.getElementById('session-display').textContent = sessionId;
-  messagesEl.innerHTML = '';
-  emptyState.style.display = '';
-  inputBox.value = '';
-  resizeInput();
-  syncState();
-}
+
 
 // Events
 inputBox.addEventListener('input', () => { resizeInput(); syncState(); });
@@ -864,59 +1044,7 @@ themeBtn.addEventListener('click', () => {
   iconDark.style.display = isDark ? 'none' : '';
   iconLight.style.display = isDark ? '' : 'none';
 });
-// PDF Upload
-const uploadBtn = document.getElementById('upload-btn');
-const pdfInput  = document.getElementById('pdf-input');
-const uploadStatus = document.getElementById('upload-status');
 
-uploadBtn.addEventListener('click', () => pdfInput.click());
-
-pdfInput.addEventListener('change', async () => {
-  const files = pdfInput.files;
-  if (!files || files.length === 0) return;
-
-  uploadStatus.textContent = 'Uploading ' + files.length + ' file(s)...';
-  uploadBtn.disabled = true;
-
-const formData = new FormData();
-for (const file of files) {
-  formData.append('files', file);
-}
-formData.append('sessionId', sessionId);
-
-  try {
-    const res = await fetch('/api/documents/upload', {
-      method: 'POST',
-      body: formData
-    });
-    const text = await res.text();
-    uploadStatus.textContent = res.ok ? text : '✗ ' + text;
-  } catch (e) {
-    uploadStatus.textContent = '✗ Could not reach server.';
-  } finally {
-    uploadBtn.disabled = false;
-    pdfInput.value = '';
-  }
-});
-// Clear Documents
-const clearDocsBtn = document.getElementById('clear-docs-btn');
-const clearStatus = document.getElementById('clear-status');
-
-clearDocsBtn.addEventListener('click', async () => {
-  clearStatus.textContent = 'Clearing...';
-  clearDocsBtn.disabled = true;
-  try {
-    const res = await fetch('/api/documents/clear/' + encodeURIComponent(sessionId), {
-      method: 'DELETE'
-    });
-    const text = await res.text();
-    clearStatus.textContent = res.ok ? '✓ Cleared' : '✗ ' + text;
-  } catch (e) {
-    clearStatus.textContent = '✗ Could not reach server.';
-  } finally {
-    clearDocsBtn.disabled = false;
-  }
-});
 
 // Mode toggle
 let streamingMode = false;
@@ -935,6 +1063,180 @@ modeStream.addEventListener('click', () => {
   modeStream.classList.add('active');
   modeStandard.classList.remove('active');
 });
+// Attachment dropdown
+const attachBtn = document.getElementById('attach-btn');
+const attachDropdown = document.getElementById('attach-dropdown');
+const attachUploadOption = document.getElementById('attach-upload-option');
+const pdfInput = document.getElementById('pdf-input');
+const uploadStatus = document.getElementById('upload-status');
+const attachSearch = document.getElementById('attach-search');
+const attachFilesList = document.getElementById('attach-files-list');
+const attachEmptyHint = document.getElementById('attach-empty-hint');
+
+let uploadedFiles = [];
+let selectedFiles = [];
+
+// Toggle dropdown
+const attachOverlay = document.getElementById('attach-overlay');
+
+function openAttachModal() {
+  attachDropdown.style.display = 'block';
+  attachOverlay.style.display = 'block';
+  attachSearch.value = '';
+  renderFilesList('');
+}
+
+function closeAttachModal() {
+  attachDropdown.style.display = 'none';
+  attachOverlay.style.display = 'none';
+}
+
+attachBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const isVisible = attachDropdown.style.display !== 'none';
+  if (isVisible) closeAttachModal(); else openAttachModal();
+});
+
+attachOverlay.addEventListener('click', (e) => {
+  e.stopPropagation();
+  closeAttachModal();
+});
+
+// Close dropdown when clicking outside
+
+
+// Search filter
+attachSearch.addEventListener('input', () => {
+  renderFilesList(attachSearch.value.trim().toLowerCase());
+});
+
+// Upload from computer
+attachUploadOption.addEventListener('click', () => pdfInput.click());
+
+pdfInput.addEventListener('change', async () => {
+  const files = pdfInput.files;
+  if (!files || files.length === 0) return;
+
+  uploadStatus.textContent = 'Uploading...';
+
+  const formData = new FormData();
+  for (const file of files) {
+    formData.append('files', file);
+  }
+  formData.append('sessionId', sessionId);
+
+  try {
+    const res = await fetch('/api/documents/upload', {
+      method: 'POST',
+      body: formData
+    });
+    const text = await res.text();
+    if (res.ok) {
+      for (const file of files) {
+        if (!uploadedFiles.includes(file.name)) {
+          uploadedFiles.push(file.name);
+          selectedFiles.push(file.name);
+        }
+      }
+      uploadStatus.textContent = '✓ Uploaded';
+      renderFilesList('');
+    } else {
+      uploadStatus.textContent = '✗ ' + text;
+    }
+  } catch (e) {
+    uploadStatus.textContent = '✗ Could not reach server.';
+  } finally {
+    pdfInput.value = '';
+  }
+});
+
+// Render files list
+function renderFilesList(filter) {
+  const filtered = uploadedFiles.filter(f => f.toLowerCase().includes(filter));
+  attachFilesList.innerHTML = '';
+
+  if (filtered.length === 0) {
+    const hint = document.createElement('div');
+    hint.className = 'attach-empty-hint';
+    hint.textContent = uploadedFiles.length === 0 ? 'No files uploaded yet.' : 'No files match your search.';
+    attachFilesList.appendChild(hint);
+    return;
+  }
+
+  for (const fileName of filtered) {
+    const row = document.createElement('div');
+    row.className = 'attach-file-row';
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.className = 'attach-file-checkbox';
+    checkbox.checked = selectedFiles.includes(fileName);
+    checkbox.addEventListener('change', () => {
+      if (checkbox.checked) {
+        if (!selectedFiles.includes(fileName)) selectedFiles.push(fileName);
+      } else {
+        selectedFiles = selectedFiles.filter(f => f !== fileName);
+      }
+    });
+
+    const icon = document.createElement('span');
+    icon.className = 'attach-file-icon';
+    icon.textContent = '📄';
+
+    const name = document.createElement('span');
+    name.className = 'attach-file-name';
+    name.textContent = fileName;
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'attach-file-delete';
+    deleteBtn.textContent = '×';
+    deleteBtn.title = 'Delete file';
+    deleteBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      await deleteFile(fileName);
+    });
+
+    row.appendChild(checkbox);
+    row.appendChild(icon);
+    row.appendChild(name);
+    row.appendChild(deleteBtn);
+    attachFilesList.appendChild(row);
+  }
+}
+
+// Delete individual file
+async function deleteFile(fileName) {
+  try {
+    const res = await fetch('/api/documents/' + encodeURIComponent(sessionId) + '/' + encodeURIComponent(fileName), {
+      method: 'DELETE'
+    });
+    if (res.ok) {
+      uploadedFiles = uploadedFiles.filter(f => f !== fileName);
+      selectedFiles = selectedFiles.filter(f => f !== fileName);
+      renderFilesList(attachSearch.value.trim().toLowerCase());
+      uploadStatus.textContent = '✓ Deleted ' + fileName;
+    } else {
+      uploadStatus.textContent = '✗ Could not delete ' + fileName;
+    }
+  } catch (e) {
+    uploadStatus.textContent = '✗ Could not reach server.';
+  }
+}
+// New chat
+function resetChat() {
+  sessionId = generateSessionId();
+  document.getElementById('session-display').textContent = sessionId;
+  messagesEl.innerHTML = '';
+  emptyState.style.display = '';
+  inputBox.value = '';
+  resizeInput();
+  syncState();
+  uploadedFiles = [];
+  selectedFiles = [];
+  uploadStatus.textContent = '';
+  closeAttachModal();
+  renderFilesList('');
+}
 
 // Init
 syncState();

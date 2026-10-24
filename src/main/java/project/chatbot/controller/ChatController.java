@@ -30,7 +30,7 @@ public class ChatController {
     public ChatResponse chat(@Valid @RequestBody ChatRequest request,
                              @RequestParam(defaultValue = "default-session") String sessionId) {
         LocalDateTime requestTime = LocalDateTime.now();
-        ChatResult result = chatService.chat(request.getMessage(), sessionId);
+        ChatResult result = chatService.chat(request.getMessage(), sessionId, request.getSelectedFiles());
         LocalDateTime responseTime = LocalDateTime.now();
 
         return new ChatResponse(
@@ -48,7 +48,7 @@ public SseEmitter streamChat(@Valid @RequestBody ChatRequest request,
                              @RequestParam(defaultValue = "default-session") String sessionId) {
     SseEmitter emitter = new SseEmitter(60_000L);
 
-    chatService.streamChat(request.getMessage(), sessionId)
+    chatService.streamChat(request.getMessage(), sessionId, request.getSelectedFiles())
             .subscribe(
                     token -> {
                         try {
@@ -68,7 +68,7 @@ public SseEmitter streamChatOllama(@Valid @RequestBody ChatRequest request,
                                    @RequestParam(defaultValue = "default-session") String sessionId) {
     SseEmitter emitter = new SseEmitter(60_000L);
 
-    chatService.streamChatOllama(request.getMessage(), sessionId)
+    chatService.streamChatOllama(request.getMessage(), sessionId, request.getSelectedFiles())
             .subscribe(
                     token -> {
                         try {
