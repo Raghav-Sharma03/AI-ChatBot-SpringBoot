@@ -75,8 +75,9 @@
       display: flex;
       flex-direction: column;
       padding: 20px 16px;
-      gap: 24px;
+      gap: 0;
       overflow: hidden;
+      min-height: 0;
     }
 
     .sidebar-header {
@@ -167,7 +168,6 @@
     }
 
     .sidebar-footer {
-      margin-top: auto;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -704,6 +704,43 @@
       background: rgba(0,0,0,0.6);
       z-index: 199;
     }
+        /* CHAT HISTORY */
+    .history-item {
+      display: flex;
+      align-items: center;
+      padding: 9px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--text-secondary);
+      transition: background 0.15s, color 0.15s;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      border-left: 2px solid transparent;
+      line-height: 1.4;
+      letter-spacing: -0.1px;
+    }
+
+    .history-item:hover {
+      background: var(--new-chat-hover);
+      color: var(--text-primary);
+      border-left-color: var(--border);
+    }
+
+    .history-item.active {
+      background: rgba(124, 58, 237, 0.08);
+      border-left-color: var(--accent);
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    .history-empty {
+      font-size: 12px;
+      color: var(--text-muted);
+      padding: 8px 4px;
+    }
 
     /* MOBILE */
     @media (max-width: 680px) {
@@ -729,20 +766,20 @@
       <span class="logo-text">NovaMind AI</span>
     </div>
 
-    <button class="new-chat-btn" id="new-chat-btn" type="button">
+    <button class="new-chat-btn" id="new-chat-btn" type="button" style="margin-bottom:20px;">
       <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       New chat
     </button>
 
-    <div class="sidebar-section">
-      <div class="sidebar-label">Session</div>
-      <div class="session-box">
-        <div class="session-id-text" id="session-display"></div>
-      </div>
+    <div class="sidebar-section" style="display:flex;flex-direction:column;gap:6px;flex:1;overflow:hidden;min-height:0;">
+      <div class="sidebar-label">Recent Chats</div>
+      <div id="history-list" style="overflow-y:auto;display:flex;flex-direction:column;gap:4px;scrollbar-width:thin;scrollbar-color:#2a2a2a transparent;"></div>
     </div>
 
-<div class="sidebar-section">
-  <div class="sidebar-label">Response Mode</div>
+
+
+    <div class="sidebar-section" style="margin-top:0;padding-top:12px;border-top:1px solid var(--border);">
+      <div class="sidebar-label">Response Mode</div>
   <div class="mode-cards">
     <button class="mode-card active" id="mode-standard" type="button">
       <div class="mode-card-icon">
@@ -767,7 +804,7 @@
   </div>
 </div>
 
-    <div class="sidebar-footer">
+    <div class="sidebar-footer" style="margin-top:12px;">
       <span class="sidebar-tagline">Your intelligent assistant</span>
       <button class="theme-btn" id="theme-btn" title="Toggle theme" type="button">
         <svg id="theme-icon-dark" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.4 1.4m11.2 11.2 1.4 1.4M5 19l1.4-1.4m11.2-11.2 1.4-1.4"/></svg>
@@ -853,7 +890,7 @@ function generateSessionId() {
 }
 
 let sessionId = generateSessionId();
-document.getElementById('session-display').textContent = sessionId;
+let activeHistorySessionId = null;
 
 // Elements
 const chatArea    = document.getElementById('chat-area');
@@ -997,8 +1034,6 @@ async function send(text) {
 
       const chunk = decoder.decode(value, { stream: true });
 
-      // SSE format: each chunk looks like "data:word\n\n"
-      // We extract just the text after "data:"
       const lines = chunk.split('\n');
       for (const line of lines) {
         if (line.startsWith('data:')) {
@@ -1010,6 +1045,11 @@ async function send(text) {
       }
     }
 
+    // Save to PostgreSQL after streaming completes
+    if (fullText) {
+      await saveMessages(text, fullText);
+    }
+
   } catch (e) {
     hideTyping();
     addMessage('ai', 'Could not reach the server. Make sure the backend is running.', null, true);
@@ -1018,6 +1058,19 @@ async function send(text) {
     syncState();
     inputBox.focus();
     scrollBottom();
+  }
+}
+
+async function saveMessages(userMessage, aiResponse) {
+  try {
+    await fetch('/api/chat/save?sessionId=' + encodeURIComponent(sessionId), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userMessage, aiResponse })
+    });
+    fetchHistory();
+  } catch (e) {
+    console.error('Could not save messages.', e);
   }
 }
 
@@ -1225,7 +1278,7 @@ async function deleteFile(fileName) {
 // New chat
 function resetChat() {
   sessionId = generateSessionId();
-  document.getElementById('session-display').textContent = sessionId;
+  activeHistorySessionId = null;
   messagesEl.innerHTML = '';
   emptyState.style.display = '';
   inputBox.value = '';
@@ -1236,10 +1289,82 @@ function resetChat() {
   uploadStatus.textContent = '';
   closeAttachModal();
   renderFilesList('');
+  fetchHistory();
 }
+// Chat History
+const historyList = document.getElementById('history-list');
+
+function renderHistory(sessions) {
+  historyList.innerHTML = '';
+  if (sessions.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'history-empty';
+    empty.textContent = 'No previous chats.';
+    historyList.appendChild(empty);
+    return;
+  }
+  sessions.forEach(session => {
+    const item = document.createElement('div');
+    item.className = 'history-item' + (session.sessionId === activeHistorySessionId ? ' active' : '');
+    item.textContent = session.title;
+    item.title = session.title;
+    item.addEventListener('click', () => loadSession(session.sessionId, session.title, item));
+    historyList.appendChild(item);
+  });
+}
+
+async function fetchHistory() {
+  try {
+    const res = await fetch('/api/chat/sessions');
+    if (res.ok) {
+      const sessions = await res.json();
+      renderHistory(sessions);
+    }
+  } catch (e) {
+    console.error('Could not load chat history.', e);
+  }
+}
+
+async function loadSession(loadedSessionId, title, itemEl) {
+  try {
+    const res = await fetch('/api/chat/' + encodeURIComponent(loadedSessionId) + '/messages');
+    if (!res.ok) return;
+    const messages = await res.json();
+
+    // Switch session
+    sessionId = loadedSessionId;
+    activeHistorySessionId = loadedSessionId;
+
+    // Clear chat area
+    messagesEl.innerHTML = '';
+    emptyState.style.display = 'none';
+
+    // Render messages
+    messages.forEach(msg => {
+      const role = msg.role === 'user' ? 'user' : 'ai';
+      const time = msg.timestamp ? formatTime(msg.timestamp) : '';
+      addMessage(role, msg.content, time, false);
+    });
+
+    // Mark active in sidebar
+    document.querySelectorAll('.history-item').forEach(i => i.classList.remove('active'));
+    itemEl.classList.add('active');
+
+    // Reset uploaded files for this session
+    uploadedFiles = [];
+    selectedFiles = [];
+    uploadStatus.textContent = '';
+    renderFilesList('');
+
+  } catch (e) {
+    console.error('Could not load session messages.', e);
+  }
+}
+
 
 // Init
 syncState();
+fetchHistory();
 </script>
 </body>
 </html>

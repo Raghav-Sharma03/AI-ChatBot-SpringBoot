@@ -1,8 +1,11 @@
 package project.chatbot.controller;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -13,6 +16,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.springframework.http.MediaType;
 import jakarta.validation.Valid;
+import project.chatbot.entity.ChatMessageEntity;
+import project.chatbot.repository.ChatMessageRepository;
 import project.chatbot.service.ChatResult;
 import project.chatbot.service.ChatService;
 
@@ -21,9 +26,11 @@ import project.chatbot.service.ChatService;
 public class ChatController {
 
     private final ChatService chatService;
+    private final ChatMessageRepository chatMessageRepository;
 
-    public ChatController(ChatService chatService) {
+    public ChatController(ChatService chatService, ChatMessageRepository chatMessageRepository) {
         this.chatService = chatService;
+        this.chatMessageRepository = chatMessageRepository;
     }
 
     @PostMapping("/chat")
@@ -83,6 +90,49 @@ public SseEmitter streamChatOllama(@Valid @RequestBody ChatRequest request,
 
     return emitter;
 }
+
+@PostMapping("/chat/save")
+public ResponseEntity<Void> saveMessages(
+        @RequestBody SaveMessageRequest request,
+        @RequestParam String sessionId) {
+    ChatMessageEntity userEntity = new ChatMessageEntity(
+            sessionId, "user", request.getUserMessage(), java.time.LocalDateTime.now());
+    ChatMessageEntity aiEntity = new ChatMessageEntity(
+            sessionId, "assistant", request.getAiResponse(), java.time.LocalDateTime.now());
+    chatMessageRepository.save(userEntity);
+    chatMessageRepository.save(aiEntity);
+    return ResponseEntity.ok().build();
+}
+
+
+@GetMapping("/chat/sessions")
+public List<SessionSummary> getSessions() {
+    List<String> sessionIds = chatMessageRepository.findDistinctConversationIds();
+    return sessionIds.stream()
+            .map(sessionId -> {
+                List<ChatMessageEntity> messages = chatMessageRepository
+                        .findByConversationIdOrderByTimestampAsc(sessionId);
+                String title = messages.stream()
+                        .filter(m -> m.getRole().equals("user"))
+                        .findFirst()
+                        .map(m -> m.getContent().length() > 40
+                                ? m.getContent().substring(0, 40) + "..."
+                                : m.getContent())
+                        .orElse("New conversation");
+                LocalDateTime lastTime = messages.isEmpty()
+                        ? LocalDateTime.MIN
+                        : messages.get(messages.size() - 1).getTimestamp();
+                return new SessionSummary(sessionId, title, lastTime);
+            })
+            .sorted((a, b) -> b.getLastTime().compareTo(a.getLastTime()))
+            .collect(Collectors.toList());
+}
+
+@GetMapping("/chat/{sessionId}/messages")
+public List<ChatMessageEntity> getMessages(@PathVariable String sessionId) {
+    return chatMessageRepository.findByConversationIdOrderByTimestampAsc(sessionId);
+}
+
 @DeleteMapping("/chat/{sessionId}")
 public ResponseEntity<Void> deleteConversation(@PathVariable String sessionId) {
     chatService.deleteConversation(sessionId);
