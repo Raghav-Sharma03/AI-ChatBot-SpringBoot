@@ -705,38 +705,33 @@
       z-index: 199;
     }
         /* CHAT HISTORY */
-    .history-item {
-      display: flex;
-      align-items: center;
-      padding: 9px 10px;
+       .history-item {
+      display: block;
+      width: 100%;
+      padding: 7px 10px;
       border-radius: 8px;
       cursor: pointer;
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 400;
-      color: var(--text-secondary);
+      color: #c4c4c4;
       transition: background 0.15s, color 0.15s;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
       border-left: 2px solid transparent;
       line-height: 1.4;
       letter-spacing: -0.1px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .history-item:hover {
       background: var(--new-chat-hover);
       color: var(--text-primary);
-      border-left-color: var(--border);
     }
 
     .history-item.active {
-      background: rgba(124, 58, 237, 0.08);
       border-left-color: var(--accent);
       color: var(--text-primary);
-      font-weight: 500;
-    }
-
-    .history-empty {
+    }    .history-empty {
       font-size: 12px;
       color: var(--text-muted);
       padding: 8px 4px;
@@ -773,7 +768,7 @@
 
     <div class="sidebar-section" style="display:flex;flex-direction:column;gap:6px;flex:1;overflow:hidden;min-height:0;">
       <div class="sidebar-label">Recent Chats</div>
-      <div id="history-list" style="overflow-y:auto;display:flex;flex-direction:column;gap:4px;scrollbar-width:thin;scrollbar-color:#2a2a2a transparent;"></div>
+      <div id="history-list" style="overflow-y:auto;flex:1;min-height:0;max-height:100%;display:block;scrollbar-width:thin;scrollbar-color:#2a2a2a transparent;"></div>
     </div>
 
 
@@ -1306,8 +1301,8 @@ function renderHistory(sessions) {
   sessions.forEach(session => {
     const item = document.createElement('div');
     item.className = 'history-item' + (session.sessionId === activeHistorySessionId ? ' active' : '');
-    item.textContent = session.title;
     item.title = session.title;
+    item.textContent = session.title.charAt(0).toUpperCase() + session.title.slice(1);
     item.addEventListener('click', () => loadSession(session.sessionId, session.title, item));
     historyList.appendChild(item);
   });
