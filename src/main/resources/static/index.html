@@ -555,7 +555,7 @@
     .attach-dropdown {
       position: fixed;
       top: 50%;
-      left: 50%;
+      left: calc(50% + 130px);
       transform: translate(-50%, -50%);
       width: 560px;
       max-width: 90vw;
@@ -642,8 +642,10 @@
     }
 
     .attach-files-list {
-      max-height: 320px;
+      max-height: 208px;
       overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #2a2a2a transparent;
     }
 
     .attach-empty-hint {
