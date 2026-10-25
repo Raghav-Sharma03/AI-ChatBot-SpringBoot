@@ -60,6 +60,7 @@ public ChatResult chat(String message, String sessionId, List<String> selectedFi
     public Flux<String> streamChat(String message, String sessionId, List<String> selectedFiles) {
     List<Document> docs = ragService.search(message, sessionId, selectedFiles);
     String augmentedMessage = message;
+    List<String> sourceFiles = ragService.getSourceFiles(docs);
 
     if (!docs.isEmpty()) {
         String context = docs.stream()
@@ -73,7 +74,14 @@ public ChatResult chat(String message, String sessionId, List<String> selectedFi
         log.info("No RAG context found for streaming.");
     }
 
-    return streamFromGemini(augmentedMessage);
+    Flux<String> responseStream = streamFromGemini(augmentedMessage);
+
+    if (!sourceFiles.isEmpty()) {
+        String sourcesToken = "__SOURCES__:" + String.join(",", sourceFiles) + "\n";
+        return Flux.concat(Flux.just(sourcesToken), responseStream);
+    }
+
+    return responseStream;
 }
 
 private Flux<String> streamFromGemini(String message) {
@@ -126,6 +134,7 @@ private Flux<String> streamFromOllama(String message) {
      public Flux<String> streamChatOllama(String message, String sessionId, List<String> selectedFiles) {
     List<Document> docs = ragService.search(message, sessionId, selectedFiles);
     String augmentedMessage = message;
+    List<String> sourceFiles = ragService.getSourceFiles(docs);
 
     if (!docs.isEmpty()) {
         String context = docs.stream()
@@ -140,10 +149,17 @@ private Flux<String> streamFromOllama(String message) {
     }
 
     log.info("Streaming directly from Ollama.");
-    return ollamaClient.prompt()
+    Flux<String> responseStream = ollamaClient.prompt()
             .user(augmentedMessage)
             .stream()
             .content();
+
+    if (!sourceFiles.isEmpty()) {
+        String sourcesToken = "__SOURCES__:" + String.join(",", sourceFiles) + "\n";
+        return Flux.concat(Flux.just(sourcesToken), responseStream);
+    }
+
+    return responseStream;
 }
       public void deleteConversation(String sessionId) {
         chatMemory.clear(sessionId);

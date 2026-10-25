@@ -33,7 +33,13 @@ public void ingest(Resource pdfResource, String sessionId) {
     PagePdfDocumentReader reader = new PagePdfDocumentReader(pdfResource);
     List<Document> documents = reader.read();
 
-    TokenTextSplitter splitter = new TokenTextSplitter();
+    TokenTextSplitter splitter = TokenTextSplitter.builder()
+        .withChunkSize(512)
+        .withMinChunkSizeChars(50)
+        .withMinChunkLengthToEmbed(50)
+        .withMaxNumChunks(10000)
+        .withKeepSeparator(true)
+        .build();
     List<Document> chunks = splitter.apply(documents);
 
     // Tag each chunk with sessionId metadata
@@ -51,6 +57,15 @@ List<Document> taggedChunks = chunks.stream()
     vectorStore.add(taggedChunks);
     log.info("Ingestion complete.");
 }
+
+public List<String> getSourceFiles(List<Document> docs) {
+    return docs.stream()
+            .map(doc -> (String) doc.getMetadata().get("fileName"))
+            .filter(name -> name != null && !name.isBlank())
+            .distinct()
+            .collect(Collectors.toList());
+}
+
 
 public List<Document> search(String query, String sessionId, List<String> selectedFiles) {
     String filter;
