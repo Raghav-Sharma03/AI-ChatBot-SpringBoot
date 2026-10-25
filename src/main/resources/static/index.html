@@ -1062,11 +1062,32 @@ async function send(text) {
       for (const line of lines) {
         if (line.startsWith('data:')) {
           const token = line.substring(5);
-          fullText += token;
-          bubble.textContent = fullText;
-          scrollBottom();
+          if (token.includes('__SOURCES__:')) {
+            const match = token.match(/__SOURCES__:([^\n]+)/);
+            if (match && match[1]) {
+              bubble.dataset.sources = match[1].trim();
+            }
+          } else if (token.trim() !== '') {
+            fullText += token;
+            bubble.textContent = fullText;
+            scrollBottom();
+          }
         }
       }
+    }
+
+    // Show sources if RAG was used
+    if (bubble.dataset.sources) {
+      const sourcesEl = document.createElement('div');
+      sourcesEl.style.cssText = 'margin-top:6px;font-size:11px;color:var(--text-muted);display:flex;align-items:center;gap:4px;flex-wrap:wrap;';
+      sourcesEl.innerHTML = '<span style="color:var(--text-secondary);">📄 Sources:</span>';
+      bubble.dataset.sources.split(',').forEach(src => {
+        const chip = document.createElement('span');
+        chip.style.cssText = 'background:var(--chip-bg);border:1px solid var(--chip-border);border-radius:4px;padding:1px 6px;font-size:11px;color:var(--text-secondary);';
+        chip.textContent = src.trim();
+        sourcesEl.appendChild(chip);
+      });
+      bubble.parentElement.appendChild(sourcesEl);
     }
 
     // Save to PostgreSQL after streaming completes
