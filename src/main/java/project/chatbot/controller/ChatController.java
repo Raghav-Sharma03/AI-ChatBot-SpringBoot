@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.http.ResponseEntity;
@@ -122,7 +123,9 @@ public List<SessionSummary> getSessions() {
                 LocalDateTime lastTime = messages.isEmpty()
                         ? LocalDateTime.MIN
                         : messages.get(messages.size() - 1).getTimestamp();
-                return new SessionSummary(sessionId, title, lastTime);
+                List<String> customTitles = chatMessageRepository.findCustomTitleByConversationId(sessionId);
+                String customTitle = customTitles.isEmpty() ? null : customTitles.get(0);
+                return new SessionSummary(sessionId, title, lastTime, customTitle);
             })
             .sorted((a, b) -> b.getLastTime().compareTo(a.getLastTime()))
             .collect(Collectors.toList());
@@ -137,5 +140,16 @@ public List<ChatMessageEntity> getMessages(@PathVariable String sessionId) {
 public ResponseEntity<Void> deleteConversation(@PathVariable String sessionId) {
     chatService.deleteConversation(sessionId);
     return ResponseEntity.noContent().build();
+}
+
+@PatchMapping("/chat/{sessionId}/rename")
+public ResponseEntity<Void> renameSession(@PathVariable String sessionId,
+                                          @RequestBody java.util.Map<String, String> body) {
+    String newTitle = body.get("title");
+    if (newTitle == null || newTitle.isBlank()) {
+        return ResponseEntity.badRequest().build();
+    }
+    chatMessageRepository.updateCustomTitle(sessionId, newTitle.trim());
+    return ResponseEntity.ok().build();
 }
 }

@@ -27,6 +27,9 @@ public class ChatMessageEntity {
     @Column(name = "timestamp", nullable = false)
     private LocalDateTime timestamp;
 
+    @Column(name = "custom_title")
+    private String customTitle;
+
     public ChatMessageEntity() {}
 
     public ChatMessageEntity(String conversationId, String role, String content, LocalDateTime timestamp) {
