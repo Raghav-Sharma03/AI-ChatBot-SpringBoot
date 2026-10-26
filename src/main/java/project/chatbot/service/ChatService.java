@@ -92,9 +92,20 @@ private Flux<String> streamFromGemini(String message) {
     try {
         log.info("Streaming from Gemini.");
         return geminiClient.prompt()
-                .user(message)
-                .stream()
-                .content()
+.system("""
+You are a helpful assistant. Always respond in clean, well-structured markdown.
+Rules:
+- Put a blank line between every heading and the paragraph that follows it.
+- Put each bullet point on its own separate line.
+- Always use triple backtick fenced code blocks with the language name. Put the opening triple backtick on its own line. Put the closing triple backtick on its own line.
+- Never put two sections on the same line.
+- Never use --- as a separator.
+- Never repeat the question in your response.
+- Never put a heading and its content on the same line.
+""")
+        .user(message)
+        .stream()
+        .content()
                 .onErrorResume(e -> {
                     log.warn("Gemini stream failed: {}. Falling back to OpenRouter.", e.getMessage());
                     geminiCooldownUntil = Instant.now().plusSeconds(300);
@@ -111,9 +122,20 @@ private Flux<String> streamFromOpenRouter(String message) {
     try {
         log.info("Streaming from OpenRouter.");
         return openRouterClient.prompt()
-                .user(message)
-                .stream()
-                .content()
+.system("""
+You are a helpful assistant. Always respond in clean, well-structured markdown.
+Rules:
+- Put a blank line between every heading and the paragraph that follows it.
+- Put each bullet point on its own separate line.
+- Always use triple backtick fenced code blocks with the language name. Put the opening triple backtick on its own line. Put the closing triple backtick on its own line.
+- Never put two sections on the same line.
+- Never use --- as a separator.
+- Never repeat the question in your response.
+- Never put a heading and its content on the same line.
+""")
+        .user(message)
+        .stream()
+        .content()
                 .onErrorResume(e -> {
                     log.warn("OpenRouter stream failed: {}. Falling back to Ollama.", e.getMessage());
                     return streamFromOllama(message);

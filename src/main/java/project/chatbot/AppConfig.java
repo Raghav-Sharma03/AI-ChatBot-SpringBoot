@@ -50,7 +50,7 @@ public ChatMemory chatMemory(PostgresChatMemoryRepository postgresRepo) {
     @Qualifier("geminiClient")
     public ChatClient geminiClient(GoogleGenAiChatModel model) {
         return ChatClient.builder(model)
-                .defaultSystem("You are a helpful assistant.")
+                .defaultSystem("You are a helpful assistant. Always format responses in clean markdown. Use ## for section headings, - for bullet points, **text** for bold, and code blocks for code. Never use === or --- or *** as decorators or separators. Always put a blank line before headings and bullet lists.")
                 .build();
     }
 
@@ -90,7 +90,7 @@ public ChatMemory chatMemory(PostgresChatMemoryRepository postgresRepo) {
                 .build();
 
         return ChatClient.builder(chatModel)
-                .defaultSystem("You are a helpful assistant.")
+                .defaultSystem("You are a helpful assistant. Always format responses in clean markdown. Use ## for section headings, - for bullet points, **text** for bold, and code blocks for code. Never use === or --- or *** as decorators or separators. Always put a blank line before headings and bullet lists.")
                 .build();
     }
 
@@ -98,7 +98,7 @@ public ChatMemory chatMemory(PostgresChatMemoryRepository postgresRepo) {
     @Qualifier("ollamaClient")
     public ChatClient ollamaClient(OllamaChatModel model) {
         return ChatClient.builder(model)
-                .defaultSystem("You are a helpful assistant.")
+                .defaultSystem("You are a helpful assistant. Always format responses in clean markdown. Use ## for section headings, - for bullet points, **text** for bold, and code blocks for code. Never use === or --- or *** as decorators or separators. Always put a blank line before headings and bullet lists.")
                 .build();
     }
     @Bean
