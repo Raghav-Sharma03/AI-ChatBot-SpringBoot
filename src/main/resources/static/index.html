@@ -7,6 +7,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+  <script>
+    marked.setOptions({ breaks: true, gfm: true });
+  </script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -446,6 +450,24 @@
 
     /* ERROR */
     .message.error .bubble { color: #f87171; }
+
+    /* MARKDOWN */
+    .bubble.markdown p { margin-bottom: 6px; line-height: 1.7; }
+    .bubble.markdown p:last-child { margin-bottom: 0; }
+    .bubble.markdown strong { font-weight: 600; color: var(--text-primary); }
+    .bubble.markdown em { font-style: italic; }
+    .bubble.markdown ul, .bubble.markdown ol { padding-left: 20px; margin-top: 4px; margin-bottom: 6px; }
+    .bubble.markdown li { margin-bottom: 4px; line-height: 1.6; }
+    .bubble.markdown h1, .bubble.markdown h2, .bubble.markdown h3 { font-weight: 600; margin-bottom: 8px; margin-top: 12px; color: var(--text-primary); }
+    .bubble.markdown h1 { font-size: 16px; }
+    .bubble.markdown h2 { font-size: 15px; }
+    .bubble.markdown h3 { font-size: 14px; }
+    .bubble.markdown code { background: var(--chip-bg); border: 1px solid var(--chip-border); border-radius: 4px; padding: 1px 6px; font-size: 13px; font-family: monospace; }
+    .bubble.markdown pre { background: var(--chip-bg); border: 1px solid var(--chip-border); border-radius: 8px; padding: 12px; overflow-x: auto; margin-bottom: 10px; }
+    .bubble.markdown pre code { background: none; border: none; padding: 0; font-size: 13px; }
+    .bubble.markdown blockquote { border-left: 3px solid var(--accent); padding-left: 12px; color: var(--text-secondary); margin-bottom: 10px; }
+    .bubble.markdown a { color: var(--accent); text-decoration: underline; }
+    .bubble.markdown hr { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
 
     /* ANIMATIONS */
     @keyframes fadeUp {
@@ -963,9 +985,30 @@ function addMessage(role, text, meta, isError) {
     label.textContent = 'You';
   }
 
-  const bubble = document.createElement('div');
-  bubble.className = 'bubble';
+const bubble = document.createElement('div');
+bubble.className = 'bubble';
+if (role === 'ai' && text) {
+  bubble.classList.add('markdown');
+  const cleaned = text
+    .replace(/\r\n/g, '\n')
+    .replace(/\\n/g, '\n')
+    .replace(/={2,}/g, '\n\n')
+    .replace(/```(\w+)\s*/g, '\n```$1\n')
+.replace(/```/g, '\n```\n')
+    .replace(/([^\n])(#{1,6} )/g, '$1\n\n$2')
+    .replace(/(#{1,6} [^\n]+?)([A-Z][a-z])/g, '$1\n\n$2')
+.replace(/(#{1,6} [^\n]+)/g, '$1\n\n')
+    .replace(/([^\n])(- [A-Z*])/g, '$1\n$2')
+    .replace(/\*\s+\*\*/g, '\n- **')
+    .replace(/\*\s+([A-Z])/g, '\n- $1')
+    .replace(/^\* /gm, '- ')
+    .replace(/^\s*-\s*$/gm, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+  bubble.innerHTML = marked.parse(cleaned);
+} else {
   bubble.textContent = text;
+}
 
   wrap.appendChild(label);
   wrap.appendChild(bubble);
@@ -1069,7 +1112,24 @@ async function send(text) {
             }
           } else if (token.trim() !== '') {
             fullText += token;
-            bubble.textContent = fullText;
+            bubble.classList.add('markdown');
+const cleaned = fullText
+  .replace(/\r\n/g, '\n')
+  .replace(/\\n/g, '\n')
+  .replace(/={2,}/g, '\n\n')
+  .replace(/([^\n])(#{1,6} )/g, '$1\n\n$2')
+  .replace(/(#{1,6} [^\n]+?)([A-Z][a-z])/g, '$1\n\n$2')
+.replace(/(#{1,6} [^\n]+)/g, '$1\n\n')
+  .replace(/```(\w+)[^\n]*/g, (match, lang) => '\n```' + lang + '\n' + match.slice(3 + lang.length).trimStart())
+.replace(/```/g, '\n```\n')
+  .replace(/([^\n])(- [A-Z*])/g, '$1\n$2')
+  .replace(/\*\s+\*\*/g, '\n- **')
+  .replace(/\*\s+([A-Z])/g, '\n- $1')
+  .replace(/^\* /gm, '- ')
+  .replace(/^\s*-\s*$/gm, '')
+  .replace(/\n{3,}/g, '\n\n')
+  .trim();
+            bubble.innerHTML = marked.parse(cleaned);
             scrollBottom();
           }
         }
